@@ -2,77 +2,91 @@
 <html lang="zh-CN">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>二维码扫描 · 极简</title>
-
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#0a84ff">
-<meta name="apple-mobile-web-app-capable" content="yes">
-
+<title>二维码扫描 · 紧凑版</title>
 <style>
-  :root{ --bg:#f5f5f7; --fg:#111; --muted:#6e6e73; --primary:#0a84ff; --card:#fff; --border:rgba(0,0,0,.08); }
-  *{box-sizing:border-box} html,body{height:100%}
+  :root{
+    --bg:#fafafb; --fg:#111; --muted:#666; --card:#fff; --border:rgba(0,0,0,.1);
+    --pad-block: clamp(10px, 3svh, 18px);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
   body{
-    margin:0; background:var(--bg); color:var(--fg);
+    background:var(--bg); color:var(--fg);
     font:16px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial;
-    display:flex; align-items:center; justify-content:center; padding:24px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    /* 关键：上下安全区 + svh 留白，避免被地址栏/工具栏遮住 */
+    padding-block: calc(env(safe-area-inset-top) + var(--pad-block))
+                   calc(env(safe-area-inset-bottom) + var(--pad-block));
+    padding-inline: 4vw;
+    min-height: 100svh; /* 工具栏可见时使用小视口高度 */
   }
-  .wrap{text-align:center}
-  h1{font-size:18px;margin:0 0 10px}
-  .sub{color:var(--muted);font-size:13px;margin-bottom:28px}
-
-  /* 中央按钮（无阴影动画，尽量素） */
+  h1{font-size:17px;font-weight:600;margin-bottom:.4em;text-align:center}
+  .sub{color:var(--muted);font-size:13px;text-align:center;margin-bottom:1.4em}
   .scan-btn{
-    width:168px;height:168px;border-radius:50%;
+    width:112px;height:112px;border-radius:50%;
     display:grid;place-items:center;cursor:pointer;user-select:none;
-    background:#fff;border:1px solid var(--border); font-weight:700; font-size:20px;
+    background:#fff;border:1px solid var(--border);
+    font-weight:700;font-size:18px; box-shadow:0 1px 6px rgba(0,0,0,.04);
   }
+  .scan-btn:active{background:#f3f3f3}
 
-  /* 弹窗（无动画） */
-  .modal{position:fixed;inset:0;display:none}
-  .modal.show{display:block}
-  .backdrop{position:absolute;inset:0;background:rgba(0,0,0,.3)}
+  /* 弹窗：高度不超过 78svh，内部滚动，留安全区 */
+  .modal{position:fixed;inset:0;display:none;z-index:50}
+  .modal.show{display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);
+              padding-block: calc(env(safe-area-inset-top) + 8px)
+                             calc(env(safe-area-inset-bottom) + 8px);
+              padding-inline: 12px;}
   .sheet{
-    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-    width:min(520px,92vw);border-radius:16px;overflow:hidden;background:var(--card);
-    border:1px solid var(--border);
+    width:min(92vw,520px);
+    max-height: min(78svh, 78dvh);
+    background:var(--card); border:1px solid var(--border); border-radius:14px;
+    display:flex; flex-direction:column; overflow:hidden;
   }
-  .sheet header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border)}
-  .xbtn,.mini{appearance:none;border:1px solid var(--border);background:#fff;color:#111;border-radius:10px;padding:8px 12px;font-size:13px;cursor:pointer}
-  .stage{position:relative;background:#000;aspect-ratio:9/16}
+  .header{display:flex;justify-content:space-between;align-items:center;
+          padding:10px 12px; border-bottom:1px solid var(--border)}
+  .title{font-size:14px;font-weight:600}
+  .xbtn{border:1px solid var(--border);background:#fff;color:#111;border-radius:9px;
+        padding:6px 10px;font-size:12px}
+
+  /* 取景区域：更矮、更窄；必要时滚动 */
+  .stage{position:relative;background:#000; overflow:hidden}
+  /* 高度：在 260px ~ 52svh 之间自适应 */
+  .stage{height:clamp(260px, 52svh, 520px)}
   video{width:100%;height:100%;object-fit:cover}
-
-  /* 简单居中取景框（静态边框） */
   .frame{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-  .box{width:240px;height:240px;border:2px solid #fff;border-radius:12px}
+  .box{width:180px;height:180px;border:2px solid #fff;border-radius:10px}
 
-  .res{padding:12px 14px;border-top:1px solid var(--border);display:none}
-  .res pre{margin:8px 0 0;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas;white-space:pre-wrap;word-break:break-word}
-  .panel{padding:12px 14px;display:flex;gap:8px;align-items:center;justify-content:space-between;border-top:1px solid var(--border)}
-  .err{color:#b00020;font-size:13px}
-  .muted{color:var(--muted);font-size:12px}
+  .res{padding:10px 12px;border-top:1px solid var(--border);display:none;overflow:auto}
+  .res pre{margin-top:6px;white-space:pre-wrap;word-break:break-word;font-size:12.5px;max-height:20svh}
+  .actions{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+  .btn{border:1px solid var(--border);background:#fff;color:#111;border-radius:9px;padding:6px 10px;font-size:12px;text-decoration:none}
+  .btn.primary{background:#0a84ff;color:#fff;border:none}
 
+  .panel{padding:8px 12px;border-top:1px solid var(--border);
+         font-size:12.5px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+  .err{color:#c00}
   @media (prefers-color-scheme:dark){
-    :root{--bg:#0b0b0f;--fg:#f2f2f7;--card:#16161a;--border:rgba(255,255,255,.08);--muted:#9b9ba1}
+    :root{--bg:#0b0b0f;--fg:#f2f2f7;--card:#16161a;--border:rgba(255,255,255,.1);--muted:#9b9ba1}
     .scan-btn{background:#1c1c21;color:#f2f2f7;border-color:var(--border)}
-    .xbtn,.mini{background:#1c1c21;color:#f2f2f7;border-color:var(--border)}
+    .xbtn,.btn{background:#1c1c21;color:#f2f2f7;border-color:var(--border)}
+    .btn.primary{background:#0a84ff;color:#fff;border:none}
   }
 </style>
 
 <body>
-  <div class="wrap">
+  <main style="width:100%;max-width:520px;display:flex;flex-direction:column;align-items:center">
     <h1>二维码扫描</h1>
-    <div class="sub">极简 · 一键扫描</div>
+    <p class="sub">极简 · 一键自动识别（已为手机上下工具栏留白）</p>
     <button class="scan-btn" id="openScan">扫描</button>
-  </div>
+  </main>
 
   <!-- 弹窗 -->
-  <div class="modal" id="modal">
-    <div class="backdrop" id="backdrop"></div>
+  <div class="modal" id="modal" aria-modal="true" role="dialog">
     <div class="sheet">
-      <header>
-        <div>扫描二维码</div>
-        <button class="xbtn" id="close">完成</button>
-      </header>
+      <div class="header">
+        <div class="title">扫描二维码</div>
+        <button class="xbtn" id="close">关闭</button>
+      </div>
 
       <div class="stage">
         <video id="v" playsinline muted></video>
@@ -80,92 +94,83 @@
       </div>
 
       <div class="res" id="res">
-        <strong>结果</strong>
+        <strong style="font-size:13px">结果</strong>
         <pre id="text"></pre>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button class="mini" id="copy">复制</button>
-          <a class="mini" id="open" target="_blank" rel="noreferrer" style="display:none">打开链接</a>
-          <button class="mini" id="again">继续扫描</button>
+        <div class="actions">
+          <button class="btn" id="copy">复制</button>
+          <a class="btn primary" id="open" target="_blank" rel="noreferrer" style="display:none">打开链接</a>
+          <button class="btn" id="again">继续扫描</button>
         </div>
       </div>
 
       <div class="panel">
-        <div class="err" id="err"></div>
-        <small class="muted" id="hint">允许相机访问后自动开始扫描</small>
+        <span id="hint">允许相机访问后自动开始扫描</span>
+        <span id="err" class="err"></span>
       </div>
     </div>
   </div>
 
-  <!-- jsQR（如需完全离线，将其源码内联到本页） -->
+  <!-- 如需完全离线，把 jsQR.min.js 内联；此处先用 CDN -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <script>
-    // 可留：PWA SW 注册（若不需要，删除这段）
-    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
-
     const $=id=>document.getElementById(id);
-    const modal=$('modal'),backdrop=$('backdrop'),openScan=$('openScan'),closeBtn=$('close');
-    const v=$('v'),err=$('err'),hint=$('hint'),res=$('res'),text=$('text'),copyBtn=$('copy'),again=$('again'),openLink=$('open');
-
+    const openScan=$("openScan"),modal=$("modal"),closeBtn=$("close"),
+          v=$("v"),hint=$("hint"),err=$("err"),
+          res=$("res"),text=$("text"),copyBtn=$("copy"),
+          again=$("again"),openLink=$("open");
     let stream=null,raf=null,scanning=false;
-    const cvs=document.createElement('canvas'),ctx=cvs.getContext('2d');
+    const cvs=document.createElement("canvas"),ctx=cvs.getContext("2d");
 
-    const showModal=()=>{ modal.classList.add('show'); start(); };
-    const hideModal=()=>{ stop(); modal.classList.remove('show'); res.style.display='none'; text.textContent=''; openLink.style.display='none'; };
-    const showErr=m=>{ err.textContent=m||''; };
+    const showModal=()=>{ modal.classList.add("show"); start(); }
+    const hideModal=()=>{ stop(); modal.classList.remove("show"); res.style.display="none"; text.textContent=""; openLink.style.display="none"; }
+    const showErr=m=>{ err.textContent=m||''; }
 
     async function start(){
       showErr(''); hint.textContent='正在打开相机…';
       try{
-        stream=await navigator.mediaDevices.getUserMedia({
-          video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false
-        });
+        stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false});
       }catch(e){
         const n=e?.name||'';
-        showErr(n==='NotAllowedError'?'相机权限被拒绝':'无法访问相机，需要 HTTPS 或 localhost');
+        showErr(n==='NotAllowedError'?'相机权限被拒绝':'无法访问相机（需要 HTTPS 或 localhost）');
         return;
       }
       v.srcObject=stream; await v.play();
       scanning=true; hint.textContent='对准二维码即可识别';
       loop();
     }
-
     function stop(){
       if(raf) cancelAnimationFrame(raf), raf=null;
       if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
-      scanning=false; hint.textContent='';
+      scanning=false;
     }
-
     function loop(){
       if(!scanning) return;
       if(v.readyState>=2 && v.videoWidth){
-        const vw=v.videoWidth, vh=v.videoHeight, s=Math.min(640/Math.min(vw,vh),1);
+        const vw=v.videoWidth, vh=v.videoHeight;
+        const s=Math.min(576/Math.min(vw,vh),1); /* 再稍微降分辨率，更省电 */
         const w=Math.round(vw*s), h=Math.round(vh*s);
         cvs.width=w; cvs.height=h; ctx.drawImage(v,0,0,w,h);
         const img=ctx.getImageData(0,0,w,h);
-        const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'attemptBoth'});
+        const code=jsQR(img.data,img.width,img.height,{inversionAttempts:"attemptBoth"});
         if(code && code.data){ onResult(code.data); return; }
       }
       raf=requestAnimationFrame(loop);
     }
-
     function onResult(val){
-      stop();
-      res.style.display='block';
-      text.textContent=val||'';
+      stop(); res.style.display="block"; text.textContent=val||"";
       const isURL=/^https?:\/\//i.test(val);
-      openLink.style.display=isURL?'inline-block':'none';
+      openLink.style.display=isURL?"inline-block":"none";
       if(isURL) openLink.href=val;
       navigator.clipboard?.writeText(val).catch(()=>{});
-      hint.textContent='已复制到剪贴板';
+      hint.textContent="已复制到剪贴板";
     }
 
-    // 交互
     openScan.onclick=showModal;
-    backdrop.onclick=hideModal; closeBtn.onclick=hideModal;
-    again.onclick=()=>{ res.style.display='none'; start(); };
-    copyBtn.onclick=async()=>{ try{ await navigator.clipboard.writeText(text.textContent.trim()); hint.textContent='已复制'; }catch{} };
-
-    addEventListener('pagehide',stop); addEventListener('beforeunload',stop);
+    closeBtn.onclick=hideModal;
+    modal.onclick=e=>{ if(e.target===modal) hideModal(); }
+    again.onclick=()=>{ res.style.display='none'; start(); }
+    copyBtn.onclick=async()=>{ try{ await navigator.clipboard.writeText(text.textContent.trim()); hint.textContent='已复制'; }catch{} }
+    addEventListener("pagehide",stop); addEventListener("beforeunload",stop);
   </script>
 </body>
 </html>
