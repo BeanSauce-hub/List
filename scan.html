@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>手机二维码扫描器</title>
+  <meta name="color-scheme" content="light dark" />
+  <style>
+    :root { --fg:#0f172a; --muted:#64748b; --bg:#f8fafc; --card:#ffffff; --primary:#059669; --danger:#e11d48; }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial;
+      background: linear-gradient(#fff,#f6f7fb); color:var(--fg); -webkit-tap-highlight-color: transparent;
+    }
+    .wrap{min-height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px}
+    header{text-align:center; margin-bottom:16px}
+    h1{margin:0; font-size:22px}
+    .sub{color:var(--muted); font-size:13px}
+    .stage{
+      width:min(420px,100%); aspect-ratio:9/16; background:#0000000d; border-radius:20px;
+      overflow:hidden; position:relative; box-shadow: inset 0 0 0 1px #e5e7eb;
+    }
+    video{width:100%; height:100%; object-fit:cover; opacity:.4}
+    .mask{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none}
+    .box{width:260px; height:260px; border:2px solid #fff; border-radius:16px;
+         box-shadow:0 0 0 9999px rgba(0,0,0,.28)}
+    .hint{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:14px}
+    .panel{width:min(420px,100%); margin-top:16px; display:flex; flex-direction:column; align-items:center; gap:12px}
+    .btn{
+      appearance:none; border:0; border-radius:999px; padding:14px 28px; font-weight:600; font-size:18px;
+      background:var(--primary); color:#fff; box-shadow:0 6px 16px rgba(5,150,105,.25); transform:translateZ(0);
+    }
+    .btn:active{transform:scale(.98)}
+    .btn.stop{background:#dc2626; box-shadow:0 6px 16px rgba(220,38,38,.25)}
+    .msg{width:min(420px,100%); font-size:14px; border-radius:14px; padding:10px 12px}
+    .msg.err{background:#fff1f2; color:#be123c; border:1px solid #fecdd3}
+    .card{
+      width:min(420px,100%); background:var(--card); border:1px solid #e5e7eb; border-radius:18px; padding:14px; box-shadow:0 2px 10px rgba(15,23,42,.05)
+    }
+    .row{display:flex; align-items:center; justify-content:space-between; gap:8px}
+    .card h2{margin:0; font-size:15px}
+    .smallbtn{font-size:13px; padding:6px 10px; border-radius:10px; border:1px solid #e5e7eb; background:#fff}
+    .content{margin-top:8px; max-height:180px; overflow:auto; font-size:14px; word-break:break-word; white-space:pre-wrap}
+    .actions{margin-top:10px; display:flex; gap:8px; flex-wrap:wrap}
+    .linkbtn{
+      font-size:13px; padding:8px 12px; border-radius:10px; border:1px solid #0f172a; background:#0f172a; color:#fff; text-decoration:none
+    }
+    .disabled{opacity:.4; pointer-events:none}
+    .toast{
+      position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
+      background:var(--primary); color:#fff; padding:8px 14px; border-radius:999px; font-size:13px; opacity:0; transition:opacity .25s;
+      box-shadow:0 8px 20px rgba(5,150,105,.3)
+    }
+    .toast.show{opacity:1}
+    footer{height:12px}
+    @media (prefers-color-scheme: dark) {
+      body{background:linear-gradient(#0b1220,#0b1220)}
+      :root{--bg:#0b1220; --card:#0f172a; --fg:#e2e8f0; --muted:#94a3b8; }
+      .stage{box-shadow: inset 0 0 0 1px #1f2937}
+      .card{border-color:#1f2937}
+      .msg.err{background:#3f1f28; border-color:#7f1d1d; color:#fecaca}
+      .smallbtn{background:#0f172a; border-color:#1f2937; color:#e2e8f0}
+      .linkbtn{border-color:#e2e8f0; background:#e2e8f0; color:#0b1220}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>二维码扫描器</h1>
+      <div class="sub">手机端优化 · 一键扫描 · 自动复制内容</div>
+    </header>
+
+    <div class="stage" id="stage">
+      <video id="video" playsinline muted></video>
+      <div class="mask" id="mask" hidden><div class="box"></div></div>
+      <div class="hint" id="hint">点击下方“扫描”访问相机</div>
+    </div>
+
+    <div class="panel">
+      <button class="btn" id="toggle">扫描</button>
+
+      <div class="msg err" id="error" hidden></div>
+
+      <div class="card" id="resultCard" hidden>
+        <div class="row">
+          <h2>扫描结果</h2>
+          <button class="smallbtn" id="copyBtn">复制</button>
+        </div>
+        <div class="content" id="resultText"></div>
+        <div class="actions">
+          <a id="openLink" class="linkbtn disabled" target="_blank" rel="noreferrer">打开链接</a>
+          <button class="smallbtn" id="clearBtn">清除结果</button>
+        </div>
+      </div>
+
+      <div class="toast" id="toast">已复制到剪贴板</div>
+    </div>
+    <footer></footer>
+  </div>
+
+  <script type="module">
+    const $ = (id) => document.getElementById(id);
+
+    const video = $("video");
+    const toggle = $("toggle");
+    const errorBox = $("error");
+    const resultCard = $("resultCard");
+    const resultText = $("resultText");
+    const copyBtn = $("copyBtn");
+    const clearBtn = $("clearBtn");
+    const openLink = $("openLink");
+    const mask = $("mask");
+    const hint = $("hint");
+    const toast = $("toast");
+
+    let scanning = false;
+    let stream = null;
+    let rafId = null;
+    let detector = null;          // BarcodeDetector 或 ZXing reader
+    let usingZXing = false;
+
+    const showToast = (msg) => {
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 1200);
+    };
+
+    const setError = (msg) => {
+      if (!msg) { errorBox.hidden = true; errorBox.textContent = ""; return; }
+      errorBox.hidden = false; errorBox.textContent = msg;
+    };
+
+    const stopCamera = async () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = null;
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+      }
+      if (usingZXing && detector?.stopContinuousDecode) {
+        try { detector.stopContinuousDecode(); } catch {}
+      }
+      scanning = false;
+      toggle.textContent = "扫描";
+      toggle.classList.remove("stop");
+      mask.hidden = true;
+      hint.textContent = "点击下方“扫描”访问相机";
+      video.srcObject = null;
+    };
+
+    const copyResult = async () => {
+      const text = resultText.textContent.trim();
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast("已复制到剪贴板");
+      } catch {
+        setError("无法复制到剪贴板，请手动选择复制。");
+      }
+    };
+
+    const showResult = async (text) => {
+      resultText.textContent = text;
+      resultCard.hidden = false;
+      // URL 按钮
+      const isURL = /^https?:\/\//i.test(text);
+      if (isURL) {
+        openLink.href = text;
+        openLink.classList.remove("disabled");
+      } else {
+        openLink.removeAttribute("href");
+        openLink.classList.add("disabled");
+      }
+      // 自动复制（静默失败忽略）
+      try { await navigator.clipboard.writeText(text); showToast("已复制到剪贴板"); } catch {}
+    };
+
+    clearBtn.addEventListener("click", () => {
+      resultCard.hidden = true;
+      resultText.textContent = "";
+      setError("");
+    });
+
+    copyBtn.addEventListener("click", copyResult);
+
+    const startBarcodeDetectorLoop = async () => {
+      const hasNative = typeof window.BarcodeDetector !== "undefined";
+      if (!hasNative) return false;
+
+      try {
+        detector = new window.BarcodeDetector({
+          formats: ["qr_code","aztec","data_matrix","pdf417","ean_13","ean_8","upc_e","upc_a","code_128"]
+        });
+
+        const loop = async () => {
+          try {
+            if (video.readyState >= 2 && video.videoWidth > 0) {
+              const codes = await detector.detect(video);
+              if (codes && codes.length) {
+                const text = codes[0].rawValue || "";
+                await stopCamera();
+                await showResult(text);
+                return;
+              }
+            }
+          } catch {}
+          rafId = requestAnimationFrame(loop);
+        };
+        rafId = requestAnimationFrame(loop);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    const startZXing = async () => {
+      try {
+        usingZXing = true;
+        const { BrowserMultiFormatContinuousReader } =
+          await import("https://cdn.jsdelivr.net/npm/@zxing/browser@latest/+esm");
+
+        detector = new BrowserMultiFormatContinuousReader();
+
+        await detector.decodeFromVideoDevice(null, video, async (res, err) => {
+          if (res) {
+            const text = res.getText();
+            await stopCamera();
+            await showResult(text);
+          }
+        });
+
+        return true;
+      } catch (e) {
+        console.error(e);
+        setError("当前浏览器不支持原生扫码，且 ZXing 回退失败。请尝试使用 Chrome/Edge/三星浏览器，或更新系统。");
+        return false;
+      }
+    };
+
+    const startScan = async () => {
+      setError("");
+      resultCard.hidden = true;
+
+      // 请求相机
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
+        });
+      } catch (e) {
+        const name = e?.name || "";
+        const msg =
+          name === "NotAllowedError" ? "相机权限被拒绝，请在浏览器设置里允许相机访问。"
+          : name === "NotFoundError" ? "未找到可用摄像头。"
+          : "无法访问相机（需要 HTTPS 或权限）。";
+        setError(msg);
+        return;
+      }
+
+      video.srcObject = stream;
+      await video.play();
+
+      scanning = true;
+      toggle.textContent = "停止";
+      toggle.classList.add("stop");
+      mask.hidden = false;
+      hint.textContent = "";
+
+      // 优先原生
+      const okNative = await startBarcodeDetectorLoop();
+      if (okNative) return;
+
+      // 回退 ZXing
+      await startZXing();
+    };
+
+    toggle.addEventListener("click", async () => {
+      if (scanning) {
+        await stopCamera();
+      } else {
+        await startScan();
+      }
+    });
+
+    // 页面卸载清理
+    window.addEventListener("pagehide", stopCamera);
+    window.addEventListener("beforeunload", stopCamera);
+  </script>
+</body>
+</html>
