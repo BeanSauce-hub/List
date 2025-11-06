@@ -19,21 +19,37 @@
     -webkit-font-smoothing:antialiased;
   }
 
-  /* 扁平圆形红色按钮（仅此一物） */
-  .launch{
-    width:120px;height:120px;border-radius:50%;
-    display:grid;place-items:center;cursor:pointer;user-select:none;
-    background:var(--btn); color:#fff;
-    font-weight:800;font-size:18px;letter-spacing:.05em;
-    border:1px solid transparent;
-    transition:transform .06s ease,background-color .06s ease,border-color .06s ease,box-shadow .06s ease;
-  }
-  .launch:active{transform:translateY(1px);background:var(--btn-press);}
-  .launch:focus-visible{
-    outline:none;
-    border-color:color-mix(in srgb,var(--ring) 70%,transparent);
-    box-shadow:0 0 0 4px color-mix(in srgb,var(--ring) 28%,transparent);
-  }
+  /* 扁平圆形红色按钮（放大1.5倍） */
+.launch{
+  width:180px;              /* 原120px → 放大1.5倍 */
+  height:180px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  user-select:none;
+  background:var(--btn);
+  color:#fff;
+  font-weight:800;
+  font-size:24px;           /* 原18px → 稍微大一点 */
+  letter-spacing:.05em;
+  border:1px solid transparent;
+  transition:
+    transform .06s ease,
+    background-color .06s ease,
+    border-color .06s ease,
+    box-shadow .06s ease;
+}
+.launch:active{
+  transform:translateY(1px);
+  background:var(--btn-press);
+}
+.launch:focus-visible{
+  outline:none;
+  border-color:color-mix(in srgb,var(--ring) 70%,transparent);
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--ring) 28%,transparent);
+}
+
 
   /* 弹窗（极简，无取景框 HUD） */
   .modal{position:fixed;inset:0;display:none;z-index:50;background:rgba(0,0,0,.55);
@@ -158,3 +174,4 @@
   </script>
 </body>
 </html>
+
