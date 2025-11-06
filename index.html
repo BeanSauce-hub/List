@@ -9,9 +9,9 @@
     --fg:#e7e9ee;
     --muted:#9aa1ad;
     --border:rgba(255,255,255,.12);
-    --btn:#e6372a; /* 扁平红 */
-    --btn-press:#c82f24;
-    --ring:#2563eb; /* 扁平高亮蓝，用作 focus ring */
+    --btn:#e6372a;       /* 主按钮红色 */
+    --btn-press:#c82f24; /* 按下时红色 */
+    --ring:#2563eb;      /* 聚焦时蓝边 */
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
@@ -24,24 +24,23 @@
     -webkit-font-smoothing:antialiased;
   }
 
-  /* 扁平化主按钮（整页只此一物） */
+  /* 圆形扁平按钮 */
   .launch{
-    width:120px;height:120px;border-radius:28px;
+    width:120px;height:120px;border-radius:50%;
     display:grid;place-items:center;cursor:pointer;user-select:none;
-    background:var(--btn); color:#fff; font-weight:800; font-size:16px; letter-spacing:.04em;
+    background:var(--btn); color:#fff;
+    font-weight:800;font-size:18px;letter-spacing:.05em;
     border:1px solid transparent;
-    transition:transform .06s ease, background-color .06s ease, box-shadow .06s ease, border-color .06s ease;
-    box-shadow:0 0 0 1px rgba(0,0,0,.25); /* 极轻的外描边，增强边界感 */
+    transition:transform .06s ease,background-color .06s ease,border-color .06s ease,box-shadow .06s ease;
   }
-  .launch:hover{ transform:translateY(0); }
-  .launch:active{ transform:translateY(1px); background:var(--btn-press); }
+  .launch:active{transform:translateY(1px);background:var(--btn-press);}
   .launch:focus-visible{
-    outline: none;
-    border-color: color-mix(in srgb, var(--ring) 70%, transparent);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 28%, transparent);
+    outline:none;
+    border-color:color-mix(in srgb,var(--ring) 70%,transparent);
+    box-shadow:0 0 0 4px color-mix(in srgb,var(--ring) 28%,transparent);
   }
 
-  /* 弹窗（扁平边界，极简） */
+  /* 弹窗部分（保持简约扁平） */
   .modal{position:fixed;inset:0;display:none;z-index:50;background:rgba(0,0,0,.55);
          padding:calc(env(safe-area-inset-top)+10px) 12px calc(env(safe-area-inset-bottom)+10px);}
   .modal.show{display:flex;align-items:center;justify-content:center}
@@ -53,26 +52,21 @@
   .bar{display:flex;justify-content:flex-end;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
   .x{appearance:none;border:1px solid var(--border);background:#161821;color:var(--fg);
      border-radius:10px;padding:6px 10px;font-size:13px;cursor:pointer}
-  .x:focus-visible{outline:none;box-shadow:0 0 0 3px color-mix(in srgb, var(--ring) 28%, transparent)}
   .stage{position:relative;background:#000;height:clamp(240px,54svh,520px)}
   video{width:100%;height:100%;object-fit:cover}
-
-  /* 简洁取景框（扁平白线） */
   .frame{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
   .box{width:170px;height:170px;border:2px solid #fff;border-radius:12px}
-
   .res{padding:10px 12px;border-top:1px solid var(--border);display:none;color:#cfd5df}
   .res pre{margin-top:6px;white-space:pre-wrap;word-break:break-word;font-size:13px;max-height:22svh;overflow:auto}
   .actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
   .btn{border:1px solid var(--border);background:#161821;color:var(--fg);border-radius:10px;padding:6px 12px;font-size:13px;text-decoration:none}
   .btn.primary{background:#2563eb;border-color:transparent}
-  .btn:focus-visible{outline:none;box-shadow:0 0 0 3px color-mix(in srgb, var(--ring) 28%, transparent)}
   .hint{padding:8px 12px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
 </style>
 
 <body>
-  <!-- 主界面仅一个按钮 -->
-  <button class="launch" id="launch">SCAN&nbsp;NOW</button>
+  <!-- 主界面只有一个圆形按钮 -->
+  <button class="launch" id="launch">SCAN</button>
 
   <!-- 扫码弹窗 -->
   <div class="modal" id="modal" aria-modal="true" role="dialog">
@@ -94,7 +88,7 @@
     </div>
   </div>
 
-  <!-- QR 识别库：如需完全离线，可把 jsQR.min.js 内容内联 -->
+  <!-- jsQR 库（可换成本地版） -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <script>
     const $=id=>document.getElementById(id);
