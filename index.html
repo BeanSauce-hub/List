@@ -4,18 +4,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>二维码扫描 · PWA</title>
 
-<!-- PWA 基础 -->
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0a84ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="apple-touch-icon" href="data:image/svg+xml;utf8,
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'>
-<defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'>
-<stop offset='0' stop-color='%23ffffff'/><stop offset='1' stop-color='%23f0f0f3'/></linearGradient></defs>
-<rect width='512' height='512' rx='110' fill='url(%23g)'/>
-<circle cx='256' cy='256' r='150' fill='%230a84ff'/>
-<text x='256' y='282' font-family='Arial' font-size='120' text-anchor='middle' fill='white'>QR</text>
-</svg>">
 
 <style>
   :root{ --bg:#f5f5f7; --fg:#111113; --muted:#6e6e73; --primary:#0a84ff; --card:#ffffff; --border:rgba(0,0,0,.08); }
@@ -30,38 +21,26 @@
   h1{font-size:18px; margin:0 0 10px}
   .sub{color:var(--muted); font-size:13px; margin-bottom:28px}
 
-  /* 中央大圆按钮：苹果简约风 */
+  /* 中央圆形按钮（苹果简约） */
   .scan-btn{
-    width:170px; height:170px; border-radius:50%;
-    display:grid; place-items:center; cursor:pointer; user-select:none;
-    background:linear-gradient(180deg,#fff,#f0f0f3); border:1px solid var(--border);
-    box-shadow:0 1px 0 rgba(255,255,255,.8) inset, 0 12px 32px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.08);
-    color:#111; font-weight:800; font-size:22px; letter-spacing:.02em;
-    transition:transform .12s ease, box-shadow .12s ease;
+    width:170px;height:170px;border-radius:50%;
+    display:grid;place-items:center;cursor:pointer;user-select:none;
+    background:linear-gradient(180deg,#fff,#f0f0f3);border:1px solid var(--border);
+    box-shadow:0 1px 0 rgba(255,255,255,.8) inset,0 12px 32px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.08);
+    color:#111;font-weight:800;font-size:22px;letter-spacing:.02em;
+    transition:transform .12s ease,box-shadow .12s ease;
   }
-  .scan-btn:active{ transform:scale(.98); box-shadow:0 6px 18px rgba(0,0,0,.16), 0 1px 2px rgba(0,0,0,.08); }
+  .scan-btn:active{ transform:scale(.98); box-shadow:0 6px 18px rgba(0,0,0,.16),0 1px 2px rgba(0,0,0,.08); }
 
-  /* 模态弹窗 + 弹簧动效 */
+  /* 模态与容器 */
   .modal{ position:fixed; inset:0; display:none; }
   .modal.show{ display:block; }
-  .backdrop{
-    position:absolute; inset:0; background:rgba(0,0,0,.28);
-    backdrop-filter:saturate(120%) blur(8px); opacity:0; animation:fadeIn .28s ease forwards;
-  }
+  .backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.28); backdrop-filter:saturate(120%) blur(8px); opacity:0 }
   .sheet{
     position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) scale(.9);
     width:min(520px,92vw); border-radius:24px; overflow:hidden; background:var(--card);
-    border:1px solid var(--border); box-shadow:0 30px 70px rgba(0,0,0,.25);
-    opacity:0; animation:pop .5s cubic-bezier(.2,.8,.2,1) forwards;
+    border:1px solid var(--border); box-shadow:0 30px 70px rgba(0,0,0,.25); opacity:0;
   }
-  @keyframes fadeIn { to { opacity:1 } }
-  /* 轻微过冲的“弹簧”效果：scale 1.04 -> 1 */
-  @keyframes pop {
-    0%   { opacity:0; transform:translate(-50%,-50%) scale(.9) }
-    60%  { opacity:1; transform:translate(-50%,-50%) scale(1.04) }
-    100% { opacity:1; transform:translate(-50%,-50%) scale(1) }
-  }
-
   .sheet header{
     display:flex; align-items:center; justify-content:space-between;
     padding:14px 16px; border-bottom:1px solid var(--border);
@@ -75,8 +54,11 @@
 
   .stage{ position:relative; background:#000; aspect-ratio:9/16; }
   video{ width:100%; height:100%; object-fit:cover }
-  .mask{ position:absolute; inset:0; display:none; align-items:center; justify-content:center; pointer-events:none }
-  .box{ width:240px; height:240px; border:2px solid #fff; border-radius:20px; box-shadow:0 0 0 9999px rgba(0,0,0,.35) }
+
+  /* 扫码 HUD：采用 SVG 跑马灯 + 柔光 */
+  .hud{
+    position:absolute; inset:0; pointer-events:none;
+  }
 
   .res{ padding:12px 14px; border-top:1px solid var(--border); display:none }
   .res pre{ margin:8px 0 0; font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas; white-space:pre-wrap; word-break:break-word }
@@ -101,7 +83,7 @@
   <!-- 弹窗 -->
   <div class="modal" id="modal" aria-modal="true" role="dialog" aria-label="扫码">
     <div class="backdrop" id="backdrop"></div>
-    <div class="sheet">
+    <div class="sheet" id="sheet">
       <header>
         <div class="title">扫描二维码</div>
         <div style="display:flex;gap:8px">
@@ -112,7 +94,27 @@
 
       <div class="stage">
         <video id="v" playsinline muted></video>
-        <div class="mask" id="mask"><div class="box"></div></div>
+
+        <!-- SVG HUD：四角高亮 + 跑马灯（stroke-dashoffset） -->
+        <svg class="hud" viewBox="0 0 1000 1778" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="hudGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%"  stop-color="#00d4ff"/>
+              <stop offset="50%" stop-color="#0a84ff"/>
+              <stop offset="100%" stop-color="#7c7cff"/>
+            </linearGradient>
+            <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="4" result="b"/>
+              <feMerge>
+                <feMergeNode in="b"/><feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+          <!-- 扫码框（中间 240x240 的相对比例换成视图单位） -->
+          <rect id="scanRect" x="380" y="669" width="240" height="240" rx="22"
+                fill="none" stroke="url(#hudGrad)" stroke-width="6"
+                stroke-dasharray="32 22" filter="url(#glow)"/>
+        </svg>
       </div>
 
       <div class="res" id="res">
@@ -132,29 +134,62 @@
     </div>
   </div>
 
-  <!-- jsQR：首次加载后将被 SW 缓存。若要完全离线，把此外链换成内联源码即可 -->
+  <!-- jsQR：首次加载后会被 SW 缓存。若需单文件离线，把源码内联到本页即可 -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <script>
-    // 简易 PWA 注册
+    // 注册 SW（可选）
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').catch(()=>{});
     }
 
     const $=id=>document.getElementById(id);
-    const modal=$("modal"), openScan=$("openScan"), closeBtn=$("close"),
-          backdrop=$("backdrop"), toggleCam=$("toggleCam"),
-          v=$("v"), mask=$("mask"), err=$("err"), hint=$("hint"),
-          res=$("res"), text=$("text"), copyBtn=$("copy"),
-          again=$("again"), openLink=$("open");
+    const modal=$("modal"), backdrop=$("backdrop"), sheet=$("sheet"),
+          openScan=$("openScan"), closeBtn=$("close"),
+          toggleCam=$("toggleCam"), v=$("v"),
+          err=$("err"), hint=$("hint"),
+          res=$("res"), text=$("text"),
+          copyBtn=$("copy"), again=$("again"), openLink=$("open");
+    const hudRect = document.getElementById('scanRect');
 
-    let stream=null, raf=null, scanning=false;
+    let stream=null, raf=null, scanning=false, hudAnim=null, sheetAnim=null, bgAnim=null;
     const cvs=document.createElement("canvas"), ctx=cvs.getContext("2d");
 
-    const showModal=()=>{ modal.classList.add("show"); navigator.vibrate?.(10); };
-    const hideModal=()=>{ stop(); modal.classList.remove("show"); res.style.display="none"; text.textContent=""; openLink.style.display="none"; };
+    const vib = p => { try { navigator.vibrate?.(p); } catch {} };
+    const showErr = m => { err.textContent = m || ""; };
 
-    const showErr=m=>{ err.textContent=m||""; };
-    const vib=(pattern)=>{ try{ navigator.vibrate?.(pattern); }catch{} }
+    // —— 更柔和的“弹簧”动效（WAAPI 近似物理回弹） ——
+    function springIn() {
+      // 背景淡入
+      bgAnim = backdrop.animate([{opacity:0},{opacity:1}], {duration:280, fill:'forwards', easing:'ease-out'});
+      // 弹簧曲线（过冲再回落）
+      const keyframes = [
+        { transform: 'translate(-50%,-50%) scale(0.92)', opacity: 0 },
+        { transform: 'translate(-50%,-50%) scale(1.04)', opacity: 1, offset: 0.6, easing: 'cubic-bezier(0.22, 1.2, 0.36, 1)' },
+        { transform: 'translate(-50%,-50%) scale(1.00)', opacity: 1 }
+      ];
+      sheetAnim = sheet.animate(keyframes, { duration: 520, fill: 'forwards' });
+    }
+    function springOut() {
+      sheet.animate(
+        [{ transform:'translate(-50%,-50%) scale(1)', opacity:1 },
+         { transform:'translate(-50%,-50%) scale(0.96)', opacity:0 }],
+        { duration:220, fill:'forwards', easing:'cubic-bezier(.2,.0,.2,1)'}
+      );
+      backdrop.animate([{opacity:1},{opacity:0}], {duration:200, fill:'forwards'});
+    }
+
+    // —— HUD 跑马灯动画：不断改变 stroke-dashoffset 实现流动高亮 ——
+    function startHud() {
+      if (!hudRect) return;
+      hudAnim = hudRect.animate(
+        [{ strokeDashoffset: 0 }, { strokeDashoffset: -300 }],
+        { duration: 1400, iterations: Infinity, easing: 'linear' }
+      );
+    }
+    function stopHud() { try { hudAnim?.cancel(); } catch {} }
+
+    const showModal=()=>{ modal.classList.add("show"); springIn(); vib(10); };
+    const hideModal=()=>{ stop(); springOut(); setTimeout(()=>modal.classList.remove("show"), 200); res.style.display="none"; text.textContent=""; openLink.style.display="none"; };
 
     const start=async()=>{
       showErr(""); hint.textContent="正在打开相机…";
@@ -167,21 +202,19 @@
         showErr(n==="NotAllowedError"?"相机权限被拒绝，请在浏览器设置里允许相机访问。"
               :n==="NotFoundError"?"未找到可用摄像头。"
               :"需要 HTTPS 或 localhost 才能开启相机。");
-        vib([30,40,30]); // 错误震动
+        vib([30,40,30]);
         return;
       }
       v.srcObject=stream; await v.play();
-      scanning=true; mask.style.display="flex"; toggleCam.textContent="停止"; toggleCam.classList.add("primary");
-      hint.textContent="对准二维码即可识别";
-      vib(15); // 开始扫描轻微震动
+      scanning=true; hint.textContent="对准二维码即可识别";
+      startHud(); vib(12);
       loop();
     };
 
     const stop=()=>{
       if(raf) cancelAnimationFrame(raf); raf=null;
       if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
-      scanning=false; mask.style.display="none"; toggleCam.textContent="开始"; toggleCam.classList.remove("primary");
-      hint.textContent="首次使用需要允许相机权限";
+      scanning=false; stopHud(); hint.textContent="首次使用需要允许相机权限";
     };
 
     const loop=()=>{
@@ -206,16 +239,19 @@
       if(isURL) openLink.href=val;
       navigator.clipboard?.writeText(val).catch(()=>{});
       hint.textContent="已自动复制到剪贴板";
-      vib([8,30,8]); // 成功震动
+      vib([8,30,8]);
     };
 
-    // 交互
-    openScan.onclick=showModal;
-    backdrop.onclick=hideModal; closeBtn.onclick=hideModal;
-    toggleCam.onclick=()=> scanning?stop():start();
-    again.onclick=()=>{ res.style.display="none"; start(); };
-    copyBtn.onclick=async()=>{ try{ await navigator.clipboard.writeText(text.textContent.trim()); hint.textContent="已复制"; vib(10);}catch{} };
-    addEventListener("pagehide",stop); addEventListener("beforeunload",stop);
+    // 交互绑定
+    openScan.onclick = showModal;
+    document.getElementById('backdrop').onclick = hideModal;
+    closeBtn.onclick = hideModal;
+    toggleCam.onclick = ()=> scanning ? stop() : start();
+    again.onclick = ()=>{ res.style.display="none"; start(); };
+    copyBtn.onclick = async()=>{ try{ await navigator.clipboard.writeText(text.textContent.trim()); hint.textContent="已复制"; vib(10);}catch{} };
+    addEventListener('pagehide', stop); addEventListener('beforeunload', stop);
   </script>
+  <!-- jsQR：如需“单文件离线”，把此外链替换为内联源码 -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </body>
 </html>
