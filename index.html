@@ -2,142 +2,76 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>QR Scanner</title>
+<title>QR Scanner · Minimal</title>
 <style>
-  :root{ --bg:#0b0b0f; --border:rgba(255,255,255,.14); }
+  :root{
+    --bg:#0e0f12;
+    --fg:#e7e9ee;
+    --muted:#9aa1ad;
+    --border:rgba(255,255,255,.12);
+    --btn:#e6372a; /* 扁平红 */
+    --btn-press:#c82f24;
+    --ring:#2563eb; /* 扁平高亮蓝，用作 focus ring */
+  }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{
-    background:var(--bg);
+    background:var(--bg); color:var(--fg);
     min-height:100svh;
     padding:calc(env(safe-area-inset-top) + 6svh) 4vw calc(env(safe-area-inset-bottom) + 6svh);
     display:flex; align-items:center; justify-content:center;
+    font:16px/1.5 ui-sans-serif,system-ui,-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial;
     -webkit-font-smoothing:antialiased;
-    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial;
   }
 
-  /* 🚀 Ultimate “SCAN NOW” Launch Button */
+  /* 扁平化主按钮（整页只此一物） */
   .launch{
-    --red-light:#ff4b3e;
-    --red-main:#e11900;
-    --red-dark:#9b0e05;
-    --chrome:#d0d2d5;
-    --glow:rgba(255,45,25,.45);
-
-    position:relative;
-    width:150px; height:150px; border-radius:50%;
-    display:grid; place-items:center; cursor:pointer; user-select:none;
-    color:#fff; font-weight:900; font-size:18px; letter-spacing:.06em;
-    text-shadow:0 1px 0 rgba(0,0,0,.4);
-    border:none;
-    background:
-      radial-gradient(120% 120% at 30% 25%, #fff8 0%, transparent 40%),
-      linear-gradient(180deg, var(--red-light) 0%, var(--red-main) 40%, var(--red-dark) 100%);
-    box-shadow:
-      0 0 0 6px var(--chrome),
-      0 0 0 10px rgba(0,0,0,.3),
-      inset 0 6px 10px rgba(255,255,255,.25),
-      inset 0 -8px 14px rgba(0,0,0,.5),
-      0 0 20px var(--glow),
-      0 0 60px var(--glow);
-    animation: pulse 3s ease-in-out infinite;
-    transition: transform .12s cubic-bezier(.22,1.3,.32,1), box-shadow .12s ease, filter .12s ease;
+    width:120px;height:120px;border-radius:28px;
+    display:grid;place-items:center;cursor:pointer;user-select:none;
+    background:var(--btn); color:#fff; font-weight:800; font-size:16px; letter-spacing:.04em;
+    border:1px solid transparent;
+    transition:transform .06s ease, background-color .06s ease, box-shadow .06s ease, border-color .06s ease;
+    box-shadow:0 0 0 1px rgba(0,0,0,.25); /* 极轻的外描边，增强边界感 */
   }
-
-  /* 💡 外圈镀铬金属框 */
-  .launch::before{
-    content:"";
-    position:absolute; inset:-10px; border-radius:50%;
-    background:linear-gradient(135deg,#f9f9fa 0%,#7a7b7c 35%,#c0c2c3 70%,#f8f9f9 100%);
-    box-shadow:
-      inset 0 1px 2px rgba(255,255,255,.6),
-      inset 0 -2px 3px rgba(0,0,0,.25),
-      0 0 12px rgba(255,255,255,.1);
-    z-index:-1;
-  }
-
-  /* ✨ 顶部玻璃高光 */
-  .launch::after{
-    content:"";
-    position:absolute; inset:10% 18% auto 18%;
-    height:26%; border-radius:999px;
-    background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,0));
-    filter:blur(.3px); pointer-events:none;
-  }
-
-  /* 🔥 呼吸发光动画 */
-  @keyframes pulse {
-    0%,100% { box-shadow:
-      0 0 0 6px var(--chrome),
-      0 0 0 10px rgba(0,0,0,.3),
-      inset 0 6px 10px rgba(255,255,255,.25),
-      inset 0 -8px 14px rgba(0,0,0,.5),
-      0 0 14px var(--glow),
-      0 0 32px var(--glow); }
-    50% { box-shadow:
-      0 0 0 6px var(--chrome),
-      0 0 0 10px rgba(0,0,0,.3),
-      inset 0 6px 10px rgba(255,255,255,.25),
-      inset 0 -8px 14px rgba(0,0,0,.5),
-      0 0 32px var(--glow),
-      0 0 80px var(--glow); }
-  }
-
-  /* 💥 按下反馈：下沉、发光收缩 */
-  .launch:active{
-    transform:translateY(2px) scale(.97);
-    filter:brightness(.95) saturate(.9);
-    box-shadow:
-      0 0 0 5px var(--chrome),
-      0 0 0 10px rgba(0,0,0,.25),
-      inset 0 6px 8px rgba(0,0,0,.5),
-      inset 0 -4px 8px rgba(255,255,255,.2),
-      0 0 14px var(--glow),
-      0 0 32px var(--glow);
-  }
-
-  /* 🔲 聚焦态 */
+  .launch:hover{ transform:translateY(0); }
+  .launch:active{ transform:translateY(1px); background:var(--btn-press); }
   .launch:focus-visible{
-    outline:none;
-    box-shadow:
-      0 0 0 4px #0a84ff,
-      0 0 0 8px rgba(10,132,255,.35),
-      0 0 30px var(--glow),
-      0 0 60px var(--glow);
+    outline: none;
+    border-color: color-mix(in srgb, var(--ring) 70%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 28%, transparent);
   }
 
-  /* 减少动画模式 */
-  @media (prefers-reduced-motion:reduce){
-    .launch{animation:none;transition:none;}
-  }
-
-  /* 弹窗部分（保持简洁） */
-  .modal{position:fixed;inset:0;display:none;z-index:50;background:rgba(0,0,0,.6);
-         padding:calc(env(safe-area-inset-top)+8px) 12px calc(env(safe-area-inset-bottom)+8px);}
+  /* 弹窗（扁平边界，极简） */
+  .modal{position:fixed;inset:0;display:none;z-index:50;background:rgba(0,0,0,.55);
+         padding:calc(env(safe-area-inset-top)+10px) 12px calc(env(safe-area-inset-bottom)+10px);}
   .modal.show{display:flex;align-items:center;justify-content:center}
   .sheet{
     width:min(92vw,520px);max-height:min(82svh,82dvh);
-    background:#111318;border:1px solid var(--border);border-radius:14px;
+    background:#12131a;border:1px solid var(--border);border-radius:14px;
     display:flex;flex-direction:column;overflow:hidden;
   }
-  .bar{display:flex;justify-content:flex-end;padding:8px;border-bottom:1px solid var(--border)}
-  .x{appearance:none;border:1px solid var(--border);background:#151821;color:#fff;
+  .bar{display:flex;justify-content:flex-end;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+  .x{appearance:none;border:1px solid var(--border);background:#161821;color:var(--fg);
      border-radius:10px;padding:6px 10px;font-size:13px;cursor:pointer}
+  .x:focus-visible{outline:none;box-shadow:0 0 0 3px color-mix(in srgb, var(--ring) 28%, transparent)}
   .stage{position:relative;background:#000;height:clamp(240px,54svh,520px)}
   video{width:100%;height:100%;object-fit:cover}
-  .frame{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-  .box{width:180px;height:180px;border:2px solid #fff;border-radius:10px}
 
-  .res{padding:10px 12px;border-top:1px solid var(--border);display:none;color:#dfe3ea}
+  /* 简洁取景框（扁平白线） */
+  .frame{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .box{width:170px;height:170px;border:2px solid #fff;border-radius:12px}
+
+  .res{padding:10px 12px;border-top:1px solid var(--border);display:none;color:#cfd5df}
   .res pre{margin-top:6px;white-space:pre-wrap;word-break:break-word;font-size:13px;max-height:22svh;overflow:auto}
-  .actions{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
-  .btn{border:1px solid var(--border);background:#151821;color:#fff;border-radius:10px;padding:6px 12px;font-size:13px;text-decoration:none}
-  .btn.primary{background:#0a84ff;border:none}
-  .hint{padding:8px 12px;border-top:1px solid var(--border);color:#a3a8b2;font-size:12.5px}
+  .actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+  .btn{border:1px solid var(--border);background:#161821;color:var(--fg);border-radius:10px;padding:6px 12px;font-size:13px;text-decoration:none}
+  .btn.primary{background:#2563eb;border-color:transparent}
+  .btn:focus-visible{outline:none;box-shadow:0 0 0 3px color-mix(in srgb, var(--ring) 28%, transparent)}
+  .hint{padding:8px 12px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
 </style>
 
 <body>
-  <!-- 主界面：只有红色按钮 -->
+  <!-- 主界面仅一个按钮 -->
   <button class="launch" id="launch">SCAN&nbsp;NOW</button>
 
   <!-- 扫码弹窗 -->
@@ -160,7 +94,7 @@
     </div>
   </div>
 
-  <!-- QR识别库 -->
+  <!-- QR 识别库：如需完全离线，可把 jsQR.min.js 内容内联 -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <script>
     const $=id=>document.getElementById(id);
@@ -178,7 +112,9 @@
     async function start(){
       showHint('Starting camera…');
       try{
-        stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
+        stream=await navigator.mediaDevices.getUserMedia({
+          video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false
+        });
       }catch{
         showHint('Camera unavailable. Use HTTPS / allow permission.');
         return;
