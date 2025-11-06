@@ -3,89 +3,61 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>手机二维码扫描器</title>
+  <title>二维码识别（拍照·单文件离线版）</title>
   <meta name="color-scheme" content="light dark" />
   <style>
-    :root { --fg:#0f172a; --muted:#64748b; --bg:#f8fafc; --card:#ffffff; --primary:#059669; --danger:#e11d48; }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0; font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial;
-      background: linear-gradient(#fff,#f6f7fb); color:var(--fg); -webkit-tap-highlight-color: transparent;
-    }
+    :root { --fg:#0f172a; --muted:#64748b; --card:#ffffff; --primary:#059669; }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0; font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial; background:linear-gradient(#fff,#f6f7fb); color:var(--fg)}
     .wrap{min-height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px}
     header{text-align:center; margin-bottom:16px}
     h1{margin:0; font-size:22px}
     .sub{color:var(--muted); font-size:13px}
-    .stage{
-      width:min(420px,100%); aspect-ratio:9/16; background:#0000000d; border-radius:20px;
-      overflow:hidden; position:relative; box-shadow: inset 0 0 0 1px #e5e7eb;
-    }
-    video{width:100%; height:100%; object-fit:cover; opacity:.4}
-    .mask{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none}
-    .box{width:260px; height:260px; border:2px solid #fff; border-radius:16px;
-         box-shadow:0 0 0 9999px rgba(0,0,0,.28)}
-    .hint{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:14px}
+    .stage{width:min(420px,100%); aspect-ratio:1/1; background:#0000000d; border-radius:20px; overflow:hidden; display:flex; align-items:center; justify-content:center}
+    .stage .icon{font-size:64px; opacity:.2}
     .panel{width:min(420px,100%); margin-top:16px; display:flex; flex-direction:column; align-items:center; gap:12px}
-    .btn{
-      appearance:none; border:0; border-radius:999px; padding:14px 28px; font-weight:600; font-size:18px;
-      background:var(--primary); color:#fff; box-shadow:0 6px 16px rgba(5,150,105,.25); transform:translateZ(0);
-    }
-    .btn:active{transform:scale(.98)}
-    .btn.stop{background:#dc2626; box-shadow:0 6px 16px rgba(220,38,38,.25)}
-    .msg{width:min(420px,100%); font-size:14px; border-radius:14px; padding:10px 12px}
-    .msg.err{background:#fff1f2; color:#be123c; border:1px solid #fecdd3}
-    .card{
-      width:min(420px,100%); background:var(--card); border:1px solid #e5e7eb; border-radius:18px; padding:14px; box-shadow:0 2px 10px rgba(15,23,42,.05)
-    }
+    .btn{appearance:none; border:0; border-radius:999px; padding:14px 28px; font-weight:600; font-size:18px; background:var(--primary); color:#fff}
+    .msg{width:min(420px,100%); font-size:14px; border-radius:14px; padding:10px 12px; background:#fff1f2; color:#be123c; border:1px solid #fecdd3; display:none}
+    .card{width:min(420px,100%); background:var(--card); border:1px solid #e5e7eb; border-radius:18px; padding:14px; box-shadow:0 2px 10px rgba(15,23,42,.05); display:none}
     .row{display:flex; align-items:center; justify-content:space-between; gap:8px}
     .card h2{margin:0; font-size:15px}
     .smallbtn{font-size:13px; padding:6px 10px; border-radius:10px; border:1px solid #e5e7eb; background:#fff}
     .content{margin-top:8px; max-height:180px; overflow:auto; font-size:14px; word-break:break-word; white-space:pre-wrap}
     .actions{margin-top:10px; display:flex; gap:8px; flex-wrap:wrap}
-    .linkbtn{
-      font-size:13px; padding:8px 12px; border-radius:10px; border:1px solid #0f172a; background:#0f172a; color:#fff; text-decoration:none
-    }
+    .linkbtn{font-size:13px; padding:8px 12px; border-radius:10px; border:1px solid #0f172a; background:#0f172a; color:#fff; text-decoration:none}
     .disabled{opacity:.4; pointer-events:none}
-    .toast{
-      position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
-      background:var(--primary); color:#fff; padding:8px 14px; border-radius:999px; font-size:13px; opacity:0; transition:opacity .25s;
-      box-shadow:0 8px 20px rgba(5,150,105,.3)
-    }
+    .toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:#059669; color:#fff; padding:8px 14px; border-radius:999px; font-size:13px; opacity:0; transition:opacity .25s}
     .toast.show{opacity:1}
-    footer{height:12px}
+    canvas{display:none}
     @media (prefers-color-scheme: dark) {
-      body{background:linear-gradient(#0b1220,#0b1220)}
-      :root{--bg:#0b1220; --card:#0f172a; --fg:#e2e8f0; --muted:#94a3b8; }
-      .stage{box-shadow: inset 0 0 0 1px #1f2937}
-      .card{border-color:#1f2937}
-      .msg.err{background:#3f1f28; border-color:#7f1d1d; color:#fecaca}
-      .smallbtn{background:#0f172a; border-color:#1f2937; color:#e2e8f0}
+      :root{--card:#0f172a}
+      body{background:linear-gradient(#0b1220,#0b1220); color:#e2e8f0}
       .linkbtn{border-color:#e2e8f0; background:#e2e8f0; color:#0b1220}
+      .smallbtn{background:#0f172a; border-color:#1f2937; color:#e2e8f0}
     }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <h1>二维码扫描器</h1>
-      <div class="sub">手机端优化 · 一键扫描 · 自动复制内容</div>
+      <h1>二维码识别（拍照·离线）</h1>
+      <div class="sub">无需相机流/BarcodeDetector · 兼容度高 · 单文件</div>
     </header>
 
     <div class="stage" id="stage">
-      <video id="video" playsinline muted></video>
-      <div class="mask" id="mask" hidden><div class="box"></div></div>
-      <div class="hint" id="hint">点击下方“扫描”访问相机</div>
+      <div class="icon">📷</div>
+      <canvas id="canvas"></canvas>
     </div>
 
     <div class="panel">
-      <button class="btn" id="toggle">扫描</button>
+      <input id="file" type="file" accept="image/*" capture="environment" hidden />
+      <button class="btn" id="scanBtn">扫描</button>
 
-      <div class="msg err" id="error" hidden></div>
+      <div class="msg" id="error"></div>
 
-      <div class="card" id="resultCard" hidden>
+      <div class="card" id="resultCard">
         <div class="row">
-          <h2>扫描结果</h2>
+          <h2>识别结果</h2>
           <button class="smallbtn" id="copyBtn">复制</button>
         </div>
         <div class="content" id="resultText"></div>
@@ -97,196 +69,99 @@
 
       <div class="toast" id="toast">已复制到剪贴板</div>
     </div>
-    <footer></footer>
   </div>
 
-  <script type="module">
-    const $ = (id) => document.getElementById(id);
+  <!-- ===== jsQR 内联版：把 jsQR 的压缩源码粘到下方自执行函数中 ===== -->
+  <script>
+  // ========== jsQR v1.4.0 (MIT) ==========
+  // 将 jsQR 的完整压缩源码粘贴到此处，确保最终在 window.jsQR 上暴露解码函数。
+  // 例如（伪示例，占位）： window.jsQR = function(imgData, w, h, opts){ /* ...library code... */ };
+  // 你可以从 npm 包 jsqr/dist/jsQR.min.js 复制其全部内容粘贴覆盖本块。
+  // ========== /jsQR ==========
+  </script>
 
-    const video = $("video");
-    const toggle = $("toggle");
+  <!-- 应用逻辑（使用 window.jsQR 解码） -->
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const file = $("file");
+    const scanBtn = $("scanBtn");
     const errorBox = $("error");
     const resultCard = $("resultCard");
     const resultText = $("resultText");
     const copyBtn = $("copyBtn");
     const clearBtn = $("clearBtn");
     const openLink = $("openLink");
-    const mask = $("mask");
-    const hint = $("hint");
+    const canvas = $("canvas");
+    const ctx = canvas.getContext("2d");
     const toast = $("toast");
 
-    let scanning = false;
-    let stream = null;
-    let rafId = null;
-    let detector = null;          // BarcodeDetector 或 ZXing reader
-    let usingZXing = false;
+    const showError = (msg) => { errorBox.textContent = msg || ""; errorBox.style.display = msg ? "block" : "none"; };
+    const showToast = (msg) => { toast.textContent = msg; toast.classList.add("show"); setTimeout(()=>toast.classList.remove("show"), 1200); };
 
-    const showToast = (msg) => {
-      toast.textContent = msg;
-      toast.classList.add("show");
-      setTimeout(() => toast.classList.remove("show"), 1200);
+    const resetResult = () => {
+      resultText.textContent = "";
+      resultCard.style.display = "none";
+      openLink.classList.add("disabled");
+      openLink.removeAttribute("href");
+      showError("");
     };
 
-    const setError = (msg) => {
-      if (!msg) { errorBox.hidden = true; errorBox.textContent = ""; return; }
-      errorBox.hidden = false; errorBox.textContent = msg;
-    };
-
-    const stopCamera = async () => {
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = null;
-      if (stream) {
-        stream.getTracks().forEach(t => t.stop());
-        stream = null;
-      }
-      if (usingZXing && detector?.stopContinuousDecode) {
-        try { detector.stopContinuousDecode(); } catch {}
-      }
-      scanning = false;
-      toggle.textContent = "扫描";
-      toggle.classList.remove("stop");
-      mask.hidden = true;
-      hint.textContent = "点击下方“扫描”访问相机";
-      video.srcObject = null;
-    };
-
-    const copyResult = async () => {
+    clearBtn.addEventListener("click", resetResult);
+    copyBtn.addEventListener("click", async ()=>{
       const text = resultText.textContent.trim();
       if (!text) return;
-      try {
-        await navigator.clipboard.writeText(text);
-        showToast("已复制到剪贴板");
-      } catch {
-        setError("无法复制到剪贴板，请手动选择复制。");
-      }
-    };
-
-    const showResult = async (text) => {
-      resultText.textContent = text;
-      resultCard.hidden = false;
-      // URL 按钮
-      const isURL = /^https?:\/\//i.test(text);
-      if (isURL) {
-        openLink.href = text;
-        openLink.classList.remove("disabled");
-      } else {
-        openLink.removeAttribute("href");
-        openLink.classList.add("disabled");
-      }
-      // 自动复制（静默失败忽略）
-      try { await navigator.clipboard.writeText(text); showToast("已复制到剪贴板"); } catch {}
-    };
-
-    clearBtn.addEventListener("click", () => {
-      resultCard.hidden = true;
-      resultText.textContent = "";
-      setError("");
+      try { await navigator.clipboard.writeText(text); showToast("已复制到剪贴板"); }
+      catch { showError("无法复制到剪贴板，请手动选择复制。"); }
     });
 
-    copyBtn.addEventListener("click", copyResult);
+    const handleImage = (img) => {
+      // 将图片按较短边 1024 像素等比缩放
+      const maxSide = 1024;
+      const scale = Math.min(maxSide / img.width, maxSide / img.height, 1);
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      canvas.width = w; canvas.height = h;
+      ctx.drawImage(img, 0, 0, w, h);
 
-    const startBarcodeDetectorLoop = async () => {
-      const hasNative = typeof window.BarcodeDetector !== "undefined";
-      if (!hasNative) return false;
+      const imageData = ctx.getImageData(0, 0, w, h);
 
-      try {
-        detector = new window.BarcodeDetector({
-          formats: ["qr_code","aztec","data_matrix","pdf417","ean_13","ean_8","upc_e","upc_a","code_128"]
-        });
-
-        const loop = async () => {
-          try {
-            if (video.readyState >= 2 && video.videoWidth > 0) {
-              const codes = await detector.detect(video);
-              if (codes && codes.length) {
-                const text = codes[0].rawValue || "";
-                await stopCamera();
-                await showResult(text);
-                return;
-              }
-            }
-          } catch {}
-          rafId = requestAnimationFrame(loop);
-        };
-        rafId = requestAnimationFrame(loop);
-        return true;
-      } catch {
-        return false;
-      }
-    };
-
-    const startZXing = async () => {
-      try {
-        usingZXing = true;
-        const { BrowserMultiFormatContinuousReader } =
-          await import("https://cdn.jsdelivr.net/npm/@zxing/browser@latest/+esm");
-
-        detector = new BrowserMultiFormatContinuousReader();
-
-        await detector.decodeFromVideoDevice(null, video, async (res, err) => {
-          if (res) {
-            const text = res.getText();
-            await stopCamera();
-            await showResult(text);
-          }
-        });
-
-        return true;
-      } catch (e) {
-        console.error(e);
-        setError("当前浏览器不支持原生扫码，且 ZXing 回退失败。请尝试使用 Chrome/Edge/三星浏览器，或更新系统。");
-        return false;
-      }
-    };
-
-    const startScan = async () => {
-      setError("");
-      resultCard.hidden = true;
-
-      // 请求相机
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: false
-        });
-      } catch (e) {
-        const name = e?.name || "";
-        const msg =
-          name === "NotAllowedError" ? "相机权限被拒绝，请在浏览器设置里允许相机访问。"
-          : name === "NotFoundError" ? "未找到可用摄像头。"
-          : "无法访问相机（需要 HTTPS 或权限）。";
-        setError(msg);
+      if (!window.jsQR) {
+        showError("jsQR 未加载：请确认已在上方脚本块粘入 jsQR 压缩源码。");
         return;
       }
+      const code = window.jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "attemptBoth" });
 
-      video.srcObject = stream;
-      await video.play();
+      if (code && code.data) {
+        const text = code.data;
+        resultText.textContent = text;
+        resultCard.style.display = "block";
 
-      scanning = true;
-      toggle.textContent = "停止";
-      toggle.classList.add("stop");
-      mask.hidden = false;
-      hint.textContent = "";
+        if (/^https?:\/\//i.test(text)) {
+          openLink.href = text;
+          openLink.classList.remove("disabled");
+        } else {
+          openLink.removeAttribute("href");
+          openLink.classList.add("disabled");
+        }
 
-      // 优先原生
-      const okNative = await startBarcodeDetectorLoop();
-      if (okNative) return;
-
-      // 回退 ZXing
-      await startZXing();
+        navigator.clipboard?.writeText(text).then(()=>showToast("已复制到剪贴板")).catch(()=>{});
+      } else {
+        showError("未识别到二维码，换个角度/距离再拍一张试试。");
+      }
     };
 
-    toggle.addEventListener("click", async () => {
-      if (scanning) {
-        await stopCamera();
-      } else {
-        await startScan();
-      }
+    file.addEventListener("change", () => {
+      resetResult();
+      const f = file.files && file.files[0];
+      if (!f) return;
+      const url = URL.createObjectURL(f);
+      const img = new Image();
+      img.onload = () => { handleImage(img); URL.revokeObjectURL(url); };
+      img.onerror = () => { showError("图片读取失败。"); URL.revokeObjectURL(url); };
+      img.src = url;
     });
 
-    // 页面卸载清理
-    window.addEventListener("pagehide", stopCamera);
-    window.addEventListener("beforeunload", stopCamera);
+    scanBtn.addEventListener("click", () => file.click());
   </script>
 </body>
 </html>
