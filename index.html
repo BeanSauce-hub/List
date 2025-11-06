@@ -1,61 +1,74 @@
 <!doctype html>
 <html lang="en">
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Universal Scanner · Ultra Fast</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Universal Scanner · Minimal</title>
 <style>
   :root{
-    --bg:#f8f9fb; --fg:#1b1c1f; --muted:#70757e; --border:rgba(0,0,0,.12);
-    --btn:#e6372a; --btn-press:#c82f24; --ring:#0a84ff;
+    --bg:#0e0f12; --fg:#e7e9ee; --muted:#9aa1ad; --border:rgba(255,255,255,.12);
+    --btn:#e6372a; --btn-press:#c82f24; --ring:#2563eb;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{
     background:var(--bg); color:var(--fg);
     min-height:100svh;
+    padding:calc(env(safe-area-inset-top) + 6svh) 4vw calc(env(safe-area-inset-bottom) + 6svh);
     display:flex; align-items:center; justify-content:center;
-    padding:calc(env(safe-area-inset-top)+6svh) 4vw calc(env(safe-area-inset-bottom)+6svh);
-    font:16px/1.5 system-ui,-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial;
+    font:16px/1.5 ui-sans-serif,system-ui,-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial;
     -webkit-font-smoothing:antialiased;
   }
 
+  /* 扁平圆形红色按钮（仅此一物） */
   .launch{
     width:120px;height:120px;border-radius:50%;
     display:grid;place-items:center;cursor:pointer;user-select:none;
-    background:var(--btn);color:#fff;font-weight:800;font-size:18px;letter-spacing:.05em;
-    border:none;transition:transform .06s ease,background-color .06s ease,box-shadow .06s ease;
+    background:var(--btn); color:#fff;
+    font-weight:800;font-size:18px;letter-spacing:.05em;
+    border:1px solid transparent;
+    transition:transform .06s ease,background-color .06s ease,border-color .06s ease,box-shadow .06s ease;
   }
-  .launch:active{transform:translateY(1px);background:var(--btn-press)}
-  .launch:focus-visible{outline:none;box-shadow:0 0 0 4px color-mix(in srgb,var(--ring) 35%,transparent)}
+  .launch:active{transform:translateY(1px);background:var(--btn-press);}
+  .launch:focus-visible{
+    outline:none;
+    border-color:color-mix(in srgb,var(--ring) 70%,transparent);
+    box-shadow:0 0 0 4px color-mix(in srgb,var(--ring) 28%,transparent);
+  }
 
-  .modal{position:fixed;inset:0;display:none;z-index:50;background:rgba(0,0,0,.35);
-         padding:calc(env(safe-area-inset-top)+10px) 12px calc(env(safe-area-inset-bottom)+10px)}
+  /* 弹窗（极简，无取景框 HUD） */
+  .modal{position:fixed;inset:0;display:none;z-index:50;background:rgba(0,0,0,.55);
+         padding:calc(env(safe-area-inset-top)+10px) 12px calc(env(safe-area-inset-bottom)+10px);}
   .modal.show{display:flex;align-items:center;justify-content:center}
   .sheet{
     width:min(92vw,520px);max-height:min(82svh,82dvh);
-    background:#fff;border:1px solid var(--border);border-radius:16px;
-    display:flex;flex-direction:column;overflow:hidden
+    background:#12131a;border:1px solid var(--border);border-radius:14px;
+    display:flex;flex-direction:column;overflow:hidden;
   }
-  .bar{display:flex;justify-content:flex-end;padding:10px 12px;border-bottom:1px solid var(--border)}
-  .x{appearance:none;border:1px solid var(--border);background:#f5f6f7;color:var(--fg);
-     border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer}
+  .bar{display:flex;justify-content:flex-end;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+  .x{appearance:none;border:1px solid var(--border);background:#161821;color:var(--fg);
+     border-radius:10px;padding:6px 10px;font-size:13px;cursor:pointer}
   .stage{position:relative;background:#000;height:clamp(240px,54svh,520px)}
   video{width:100%;height:100%;object-fit:cover}
-  .res{padding:12px;border-top:1px solid var(--border);display:none;color:#222}
-  .res pre{margin-top:6px;white-space:pre-wrap;word-break:break-word;font-size:14px;max-height:22svh;overflow:auto}
+
+  .res{padding:10px 12px;border-top:1px solid var(--border);display:none;color:#cfd5df}
+  .res pre{margin-top:6px;white-space:pre-wrap;word-break:break-word;font-size:13px;max-height:22svh;overflow:auto}
   .actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
-  .btn{border:1px solid var(--border);background:#f5f6f7;color:#111;border-radius:8px;padding:6px 12px;font-size:13px;text-decoration:none}
-  .btn.primary{background:var(--ring);color:#fff;border:none}
-  .hint{padding:10px 12px;border-top:1px solid var(--border);color:var(--muted);font-size:13px;text-align:center}
+  .btn{border:1px solid var(--border);background:#161821;color:var(--fg);border-radius:10px;padding:6px 12px;font-size:13px;text-decoration:none}
+  .btn.primary{background:#2563eb;border-color:transparent}
+  .hint{padding:8px 12px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
 </style>
 
 <body>
+  <!-- 主界面只有一个圆形按钮 -->
   <button class="launch" id="launch">SCAN</button>
 
+  <!-- 扫码弹窗（自动开始，支持条形码+二维码） -->
   <div class="modal" id="modal" aria-modal="true" role="dialog">
     <div class="sheet">
       <div class="bar"><button class="x" id="close">Close</button></div>
-      <div class="stage"><video id="video" playsinline muted></video></div>
+      <div class="stage">
+        <video id="video" playsinline muted></video>
+      </div>
       <div class="res" id="res">
         <pre id="text"></pre>
         <div class="actions">
@@ -68,7 +81,7 @@
     </div>
   </div>
 
-  <!-- ZXing 仅作回退用；支持多码制 -->
+  <!-- ZXing：多码制识别（QR + 一维码） -->
   <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
   <script>
     const $=id=>document.getElementById(id);
@@ -76,174 +89,81 @@
     const video=$('video'), hint=$('hint'), res=$('res'), text=$('text');
     const copyBtn=$('copy'), again=$('again'), openLink=$('open');
 
-    let stream, running=false, codeReader=null, lastTs=0, useNative=false, rVFC=null;
-
-    const desiredFormatsNative = [
-      'qr_code','ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf','codabar'
-    ];
-
-    const constraints = {
-      video: {
-        facingMode: { exact: 'environment' },
-        width:  { ideal: 640, max: 800 },   // 中低分辨率 = 更快
-        height: { ideal: 480, max: 600 },
-        frameRate: { ideal: 30, max: 30 }
-      }
-    };
+    let codeReader=null, currentDeviceId=null, running=false;
 
     const openModal=()=>{ modal.classList.add('show'); start(); };
     const closeModal=()=>{ stop(); modal.classList.remove('show'); res.style.display='none'; text.textContent=''; openLink.style.display='none'; };
     const showHint=m=>{ hint.textContent=m||''; };
 
+    async function pickBackCamera() {
+      // 选择后置摄像头（如果可用）
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const vids = devices.filter(d => d.kind === 'videoinput');
+        const back = vids.find(d => /back|rear|environment/i.test(d.label)) || vids[0];
+        return back?.deviceId ?? null;
+      } catch { return null; }
+    }
+
     async function start(){
       showHint('Starting camera…');
-      running=true; lastTs=0;
-
-      // 选择原生 BarcodeDetector（如可用）
-      useNative = 'BarcodeDetector' in window;
-      let supported = [];
-      if(useNative && BarcodeDetector.getSupportedFormats){
-        try { supported = await BarcodeDetector.getSupportedFormats(); }
-        catch { supported = []; }
-        const wanted = desiredFormatsNative.filter(f => supported.includes(f));
-        if(!wanted.length) useNative=false; else detector = new BarcodeDetector({ formats: wanted });
-      }
-
+      if(!codeReader){ codeReader = new ZXing.BrowserMultiFormatReader(); }
       try{
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        currentDeviceId = await pickBackCamera();
+        const deviceIdToUse = currentDeviceId || undefined; // 让 ZXing 自选
+        running = true;
+        await codeReader.decodeFromVideoDevice(
+          deviceIdToUse,
+          video,
+          (result, err, controls) => {
+            if(!running) return;
+            if(result){
+              onResult(result.getText(), controls);
+            } else if(err && !(err instanceof ZXing.NotFoundException)) {
+              // 非“未找到”错误（例如读取异常）
+              console.warn(err);
+            }
+          },
+          {
+            // 也可以在这里提供约束：facingMode/environment
+            // 但使用 deviceId 通常更稳定
+          }
+        );
+        showHint('Point at a code (QR / Barcode).');
       }catch(e){
-        showHint('Camera unavailable. Use HTTPS / allow permission.'); running=false; return;
-      }
-
-      video.srcObject = stream;
-      await video.play();
-
-      // 连续对焦 & 轻微变焦 &（可选）手电
-      await tuneCamera(video, { zoom: 2.0, torch: false });
-
-      if(useNative){
-        showHint('Fast mode (native). Point at a QR / Barcode.');
-        startNativeLoop();
-      }else{
-        showHint('Fallback mode. Point at a QR / Barcode.');
-        startZXing();
+        console.error(e);
+        showHint('Camera unavailable. Use HTTPS / allow permission.');
       }
     }
 
     function stop(){
-      running=false;
-      if(rVFC){ try{ video.cancelVideoFrameCallback(rVFC); }catch{} rVFC=null; }
+      running = false;
       try{ codeReader?.reset(); }catch{}
-      if(stream){ try{ stream.getTracks().forEach(t=>t.stop()); }catch{} stream=null; }
     }
 
-    /* —— 原生 BarcodeDetector 路径 —— */
-    let detector=null;
-    function startNativeLoop(){
-      const strideMs = 80; // 节流：约 12.5 FPS 解码
-      const centerCrop = () => {
-        const vw = video.videoWidth || 640, vh = video.videoHeight || 480;
-        const size = Math.floor(Math.min(vw, vh) * 0.72); // 中心 72% ROI
-        const sx = Math.floor((vw - size)/2), sy = Math.floor((vh - size)/2);
-        return { sx, sy, size };
-      };
-
-      const tick = async (now, metadata) => {
-        if(!running) return;
-        if (now - lastTs < strideMs) { rVFC = video.requestVideoFrameCallback(tick); return; }
-        lastTs = now;
-
-        try{
-          const { sx, sy, size } = centerCrop();
-          const bmp = await createImageBitmap(video, sx, sy, size, size, { resizeWidth: 512, resizeHeight: 512 });
-          const codes = await detector.detect(bmp);
-          bmp.close?.();
-          if(codes && codes.length){
-            onResult(codes[0].rawValue || codes[0].rawValueText || '');
-            return;
-          }
-        }catch(e){ /* 忽略偶发错误 */ }
-
-        rVFC = video.requestVideoFrameCallback(tick);
-      };
-      rVFC = video.requestVideoFrameCallback(tick);
-    }
-
-    /* —— ZXing 回退路径（限制码制 + 约束 + 节流） —— */
-    function startZXing(){
-      if(!codeReader){
-        const hints = new Map();
-        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-          ZXing.BarcodeFormat.QR_CODE,
-          ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8,
-          ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E,
-          ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39,
-          ZXing.BarcodeFormat.ITF, ZXing.BarcodeFormat.CODABAR
-        ]);
-        hints.set(ZXing.DecodeHintType.TRY_HARDER, false);
-        codeReader = new ZXing.BrowserMultiFormatReader(hints);
-      }
-
-      const onFrame = (result, err, controls) => {
-        if(!running) return;
-        const now = performance.now();
-        if(now - lastTs < 120) return; // 节流
-        lastTs = now;
-        if(result){
-          try{ controls?.stop(); }catch{}
-          onResult(result.getText());
-        }
-      };
-
-      codeReader.decodeFromVideoDevice(null, video, onFrame, constraints)
-        .catch(e => { showHint('Decode failed. Check permissions.'); console.error(e); });
-    }
-
-    function onResult(val){
+    function onResult(val, controls){
       stop();
       res.style.display='block';
       text.textContent = val || '';
+      // URL 快捷打开
       const isURL = /^https?:\/\//i.test(val);
       openLink.style.display = isURL ? 'inline-block' : 'none';
       if(isURL) openLink.href = val;
+      // 自动复制
       navigator.clipboard?.writeText(val).catch(()=>{});
       showHint('Result copied to clipboard.');
-    }
-
-    /* —— 相机能力调优：连续对焦 + 变焦 (+ 可选手电) —— */
-    async function tuneCamera(videoEl, { zoom = 2.0, torch = false } = {}){
-      try{
-        const track = videoEl.srcObject?.getVideoTracks?.()[0];
-        const caps = track?.getCapabilities?.() || {};
-        const adv = [];
-
-        if (Array.isArray(caps.focusMode)) {
-          if (caps.focusMode.includes('continuous')) adv.push({ focusMode: 'continuous' });
-          else if (caps.focusMode.includes('auto')) adv.push({ focusMode: 'auto' });
-        }
-        if (caps.zoom && typeof caps.zoom.max === 'number') {
-          const target = Math.min(zoom, caps.zoom.max);
-          if (target > (caps.zoom.min ?? 1)) adv.push({ zoom: target });
-        }
-        if (torch && caps.torch) adv.push({ torch: true });
-
-        if (adv.length) await track.applyConstraints({ advanced: adv });
-
-        // 页面返回前台时重应用，防止设置丢失
-        document.addEventListener('visibilitychange', async () => {
-          if (!document.hidden) {
-            try{ await track.applyConstraints({ advanced: adv }); }catch{}
-          }
-        });
-      }catch(e){ /* 忽略不支持 */ }
     }
 
     // 交互
     launch.onclick = openModal;
     closeBtn.onclick = closeModal;
-    modal.onclick  = e => { if(e.target===modal) closeModal(); };
-    again.onclick  = () => { res.style.display='none'; start(); };
-    copyBtn.onclick= async () => { try{ await navigator.clipboard.writeText(text.textContent.trim()); showHint('Copied.'); }catch{} };
+    modal.onclick = e => { if(e.target === modal) closeModal(); };
+    again.onclick = () => { res.style.display='none'; start(); };
+    copyBtn.onclick = async () => {
+      try{ await navigator.clipboard.writeText(text.textContent.trim()); showHint('Copied.'); }catch{}
+    };
+
+    // 页面离开时释放摄像头
     addEventListener('pagehide', stop);
     addEventListener('beforeunload', stop);
   </script>
