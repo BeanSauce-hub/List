@@ -2,16 +2,11 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>QR Scanner · Minimal</title>
+<title>Universal Scanner · Minimal</title>
 <style>
   :root{
-    --bg:#0e0f12;
-    --fg:#e7e9ee;
-    --muted:#9aa1ad;
-    --border:rgba(255,255,255,.12);
-    --btn:#e6372a;       /* 主按钮红色 */
-    --btn-press:#c82f24; /* 按下时红色 */
-    --ring:#2563eb;      /* 聚焦时蓝边 */
+    --bg:#0e0f12; --fg:#e7e9ee; --muted:#9aa1ad; --border:rgba(255,255,255,.12);
+    --btn:#e6372a; --btn-press:#c82f24; --ring:#2563eb;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
@@ -24,7 +19,7 @@
     -webkit-font-smoothing:antialiased;
   }
 
-  /* 圆形扁平按钮 */
+  /* 扁平圆形红色按钮（仅此一物） */
   .launch{
     width:120px;height:120px;border-radius:50%;
     display:grid;place-items:center;cursor:pointer;user-select:none;
@@ -40,7 +35,7 @@
     box-shadow:0 0 0 4px color-mix(in srgb,var(--ring) 28%,transparent);
   }
 
-  /* 弹窗部分（保持简约扁平） */
+  /* 弹窗（极简，无取景框 HUD） */
   .modal{position:fixed;inset:0;display:none;z-index:50;background:rgba(0,0,0,.55);
          padding:calc(env(safe-area-inset-top)+10px) 12px calc(env(safe-area-inset-bottom)+10px);}
   .modal.show{display:flex;align-items:center;justify-content:center}
@@ -54,8 +49,7 @@
      border-radius:10px;padding:6px 10px;font-size:13px;cursor:pointer}
   .stage{position:relative;background:#000;height:clamp(240px,54svh,520px)}
   video{width:100%;height:100%;object-fit:cover}
-  .frame{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-  .box{width:170px;height:170px;border:2px solid #fff;border-radius:12px}
+
   .res{padding:10px 12px;border-top:1px solid var(--border);display:none;color:#cfd5df}
   .res pre{margin-top:6px;white-space:pre-wrap;word-break:break-word;font-size:13px;max-height:22svh;overflow:auto}
   .actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
@@ -68,13 +62,12 @@
   <!-- 主界面只有一个圆形按钮 -->
   <button class="launch" id="launch">SCAN</button>
 
-  <!-- 扫码弹窗 -->
+  <!-- 扫码弹窗（自动开始，支持条形码+二维码） -->
   <div class="modal" id="modal" aria-modal="true" role="dialog">
     <div class="sheet">
       <div class="bar"><button class="x" id="close">Close</button></div>
       <div class="stage">
-        <video id="v" playsinline muted></video>
-        <div class="frame"><div class="box"></div></div>
+        <video id="video" playsinline muted></video>
       </div>
       <div class="res" id="res">
         <pre id="text"></pre>
@@ -88,66 +81,91 @@
     </div>
   </div>
 
-  <!-- jsQR 库（可换成本地版） -->
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <!-- ZXing：多码制识别（QR + 一维码） -->
+  <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
   <script>
     const $=id=>document.getElementById(id);
-    const launch=$('launch'),modal=$('modal'),closeBtn=$('close'),
-          v=$('v'),hint=$('hint'),res=$('res'),text=$('text'),
-          copyBtn=$('copy'),again=$('again'),openLink=$('open');
+    const launch=$('launch'), modal=$('modal'), closeBtn=$('close');
+    const video=$('video'), hint=$('hint'), res=$('res'), text=$('text');
+    const copyBtn=$('copy'), again=$('again'), openLink=$('open');
 
-    let stream=null,raf=null,scanning=false;
-    const cvs=document.createElement('canvas'),ctx=cvs.getContext('2d');
+    let codeReader=null, currentDeviceId=null, running=false;
 
-    const openModal=()=>{modal.classList.add('show');start();}
-    const closeModal=()=>{stop();modal.classList.remove('show');res.style.display='none';text.textContent='';openLink.style.display='none';}
-    const showHint=m=>hint.textContent=m||'';
+    const openModal=()=>{ modal.classList.add('show'); start(); };
+    const closeModal=()=>{ stop(); modal.classList.remove('show'); res.style.display='none'; text.textContent=''; openLink.style.display='none'; };
+    const showHint=m=>{ hint.textContent=m||''; };
+
+    async function pickBackCamera() {
+      // 选择后置摄像头（如果可用）
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const vids = devices.filter(d => d.kind === 'videoinput');
+        const back = vids.find(d => /back|rear|environment/i.test(d.label)) || vids[0];
+        return back?.deviceId ?? null;
+      } catch { return null; }
+    }
 
     async function start(){
       showHint('Starting camera…');
+      if(!codeReader){ codeReader = new ZXing.BrowserMultiFormatReader(); }
       try{
-        stream=await navigator.mediaDevices.getUserMedia({
-          video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false
-        });
-      }catch{
+        currentDeviceId = await pickBackCamera();
+        const deviceIdToUse = currentDeviceId || undefined; // 让 ZXing 自选
+        running = true;
+        await codeReader.decodeFromVideoDevice(
+          deviceIdToUse,
+          video,
+          (result, err, controls) => {
+            if(!running) return;
+            if(result){
+              onResult(result.getText(), controls);
+            } else if(err && !(err instanceof ZXing.NotFoundException)) {
+              // 非“未找到”错误（例如读取异常）
+              console.warn(err);
+            }
+          },
+          {
+            // 也可以在这里提供约束：facingMode/environment
+            // 但使用 deviceId 通常更稳定
+          }
+        );
+        showHint('Point at a code (QR / Barcode).');
+      }catch(e){
+        console.error(e);
         showHint('Camera unavailable. Use HTTPS / allow permission.');
-        return;
       }
-      v.srcObject=stream;await v.play();
-      scanning=true;showHint('Point at a QR code.');loop();
     }
+
     function stop(){
-      if(raf)cancelAnimationFrame(raf),raf=null;
-      if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
-      scanning=false;
+      running = false;
+      try{ codeReader?.reset(); }catch{}
     }
-    function loop(){
-      if(!scanning)return;
-      if(v.readyState>=2&&v.videoWidth){
-        const vw=v.videoWidth,vh=v.videoHeight,s=Math.min(560/Math.min(vw,vh),1);
-        const w=Math.round(vw*s),h=Math.round(vh*s);
-        cvs.width=w;cvs.height=h;ctx.drawImage(v,0,0,w,h);
-        const img=ctx.getImageData(0,0,w,h);
-        const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'attemptBoth'});
-        if(code&&code.data){onResult(code.data);return;}
-      }
-      raf=requestAnimationFrame(loop);
-    }
-    function onResult(val){
-      stop();res.style.display='block';text.textContent=val||'';
-      const isURL=/^https?:\/\//i.test(val);
-      openLink.style.display=isURL?'inline-block':'none';
-      if(isURL)openLink.href=val;
+
+    function onResult(val, controls){
+      stop();
+      res.style.display='block';
+      text.textContent = val || '';
+      // URL 快捷打开
+      const isURL = /^https?:\/\//i.test(val);
+      openLink.style.display = isURL ? 'inline-block' : 'none';
+      if(isURL) openLink.href = val;
+      // 自动复制
       navigator.clipboard?.writeText(val).catch(()=>{});
       showHint('Result copied to clipboard.');
     }
 
-    launch.onclick=openModal;
-    closeBtn.onclick=closeModal;
-    modal.onclick=e=>{if(e.target===modal)closeModal();}
-    again.onclick=()=>{res.style.display='none';start();}
-    copyBtn.onclick=async()=>{try{await navigator.clipboard.writeText(text.textContent.trim());showHint('Copied.');}catch{}}
-    addEventListener('pagehide',stop);addEventListener('beforeunload',stop);
+    // 交互
+    launch.onclick = openModal;
+    closeBtn.onclick = closeModal;
+    modal.onclick = e => { if(e.target === modal) closeModal(); };
+    again.onclick = () => { res.style.display='none'; start(); };
+    copyBtn.onclick = async () => {
+      try{ await navigator.clipboard.writeText(text.textContent.trim()); showHint('Copied.'); }catch{}
+    };
+
+    // 页面离开时释放摄像头
+    addEventListener('pagehide', stop);
+    addEventListener('beforeunload', stop);
   </script>
 </body>
 </html>
