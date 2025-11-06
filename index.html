@@ -2,73 +2,72 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Universal Scanner · Minimal</title>
+<title>Universal Scanner · Light</title>
 <style>
   :root{
-    --bg:#0e0f12; --fg:#e7e9ee; --muted:#9aa1ad; --border:rgba(255,255,255,.12);
-    --btn:#e6372a; --btn-press:#c82f24; --ring:#2563eb;
+    --bg:#f8f9fb;
+    --fg:#1b1c1f;
+    --muted:#70757e;
+    --border:rgba(0,0,0,.12);
+    --btn:#e6372a;
+    --btn-press:#c82f24;
+    --ring:#0a84ff;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{
-    background:var(--bg); color:var(--fg);
+    background:var(--bg);color:var(--fg);
     min-height:100svh;
-    padding:calc(env(safe-area-inset-top) + 6svh) 4vw calc(env(safe-area-inset-bottom) + 6svh);
-    display:flex; align-items:center; justify-content:center;
-    font:16px/1.5 ui-sans-serif,system-ui,-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial;
+    display:flex;align-items:center;justify-content:center;
+    padding:calc(env(safe-area-inset-top)+6svh) 4vw calc(env(safe-area-inset-bottom)+6svh);
+    font:16px/1.5 system-ui,-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial;
     -webkit-font-smoothing:antialiased;
   }
 
-  /* 扁平圆形红色按钮（仅此一物） */
+  /* 红色圆形按钮 */
   .launch{
     width:120px;height:120px;border-radius:50%;
-    display:grid;place-items:center;cursor:pointer;user-select:none;
-    background:var(--btn); color:#fff;
+    display:grid;place-items:center;
+    background:var(--btn);color:#fff;
     font-weight:800;font-size:18px;letter-spacing:.05em;
-    border:1px solid transparent;
-    transition:transform .06s ease,background-color .06s ease,border-color .06s ease,box-shadow .06s ease;
+    border:none;cursor:pointer;user-select:none;
+    transition:transform .06s ease,background-color .06s ease,box-shadow .06s ease;
   }
   .launch:active{transform:translateY(1px);background:var(--btn-press);}
   .launch:focus-visible{
     outline:none;
-    border-color:color-mix(in srgb,var(--ring) 70%,transparent);
-    box-shadow:0 0 0 4px color-mix(in srgb,var(--ring) 28%,transparent);
+    box-shadow:0 0 0 4px color-mix(in srgb,var(--ring) 35%,transparent);
   }
 
-  /* 弹窗（极简，无取景框 HUD） */
-  .modal{position:fixed;inset:0;display:none;z-index:50;background:rgba(0,0,0,.55);
+  /* 弹窗部分 */
+  .modal{position:fixed;inset:0;display:none;z-index:50;background:rgba(0,0,0,.35);
          padding:calc(env(safe-area-inset-top)+10px) 12px calc(env(safe-area-inset-bottom)+10px);}
   .modal.show{display:flex;align-items:center;justify-content:center}
   .sheet{
     width:min(92vw,520px);max-height:min(82svh,82dvh);
-    background:#12131a;border:1px solid var(--border);border-radius:14px;
+    background:#fff;border:1px solid var(--border);border-radius:16px;
     display:flex;flex-direction:column;overflow:hidden;
   }
-  .bar{display:flex;justify-content:flex-end;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
-  .x{appearance:none;border:1px solid var(--border);background:#161821;color:var(--fg);
-     border-radius:10px;padding:6px 10px;font-size:13px;cursor:pointer}
+  .bar{display:flex;justify-content:flex-end;padding:10px 12px;border-bottom:1px solid var(--border)}
+  .x{appearance:none;border:1px solid var(--border);background:#f5f6f7;color:var(--fg);
+     border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer}
   .stage{position:relative;background:#000;height:clamp(240px,54svh,520px)}
   video{width:100%;height:100%;object-fit:cover}
-
-  .res{padding:10px 12px;border-top:1px solid var(--border);display:none;color:#cfd5df}
-  .res pre{margin-top:6px;white-space:pre-wrap;word-break:break-word;font-size:13px;max-height:22svh;overflow:auto}
+  .res{padding:12px;border-top:1px solid var(--border);display:none;color:#222}
+  .res pre{margin-top:6px;white-space:pre-wrap;word-break:break-word;font-size:14px;max-height:22svh;overflow:auto}
   .actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
-  .btn{border:1px solid var(--border);background:#161821;color:var(--fg);border-radius:10px;padding:6px 12px;font-size:13px;text-decoration:none}
-  .btn.primary{background:#2563eb;border-color:transparent}
-  .hint{padding:8px 12px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+  .btn{border:1px solid var(--border);background:#f5f6f7;color:#111;border-radius:8px;padding:6px 12px;font-size:13px;text-decoration:none}
+  .btn.primary{background:var(--ring);color:#fff;border:none}
+  .hint{padding:10px 12px;border-top:1px solid var(--border);color:var(--muted);font-size:13px;text-align:center}
 </style>
 
 <body>
-  <!-- 主界面只有一个圆形按钮 -->
   <button class="launch" id="launch">SCAN</button>
 
-  <!-- 扫码弹窗（自动开始，支持条形码+二维码） -->
   <div class="modal" id="modal" aria-modal="true" role="dialog">
     <div class="sheet">
       <div class="bar"><button class="x" id="close">Close</button></div>
-      <div class="stage">
-        <video id="video" playsinline muted></video>
-      </div>
+      <div class="stage"><video id="video" playsinline muted></video></div>
       <div class="res" id="res">
         <pre id="text"></pre>
         <div class="actions">
@@ -81,7 +80,7 @@
     </div>
   </div>
 
-  <!-- ZXing：多码制识别（QR + 一维码） -->
+  <!-- ZXing 库 -->
   <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
   <script>
     const $=id=>document.getElementById(id);
@@ -89,83 +88,53 @@
     const video=$('video'), hint=$('hint'), res=$('res'), text=$('text');
     const copyBtn=$('copy'), again=$('again'), openLink=$('open');
 
-    let codeReader=null, currentDeviceId=null, running=false;
+    let codeReader=null, running=false;
 
     const openModal=()=>{ modal.classList.add('show'); start(); };
     const closeModal=()=>{ stop(); modal.classList.remove('show'); res.style.display='none'; text.textContent=''; openLink.style.display='none'; };
     const showHint=m=>{ hint.textContent=m||''; };
 
-    async function pickBackCamera() {
-      // 选择后置摄像头（如果可用）
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const vids = devices.filter(d => d.kind === 'videoinput');
-        const back = vids.find(d => /back|rear|environment/i.test(d.label)) || vids[0];
-        return back?.deviceId ?? null;
-      } catch { return null; }
-    }
-
     async function start(){
       showHint('Starting camera…');
-      if(!codeReader){ codeReader = new ZXing.BrowserMultiFormatReader(); }
+      if(!codeReader) codeReader=new ZXing.BrowserMultiFormatReader();
       try{
-        currentDeviceId = await pickBackCamera();
-        const deviceIdToUse = currentDeviceId || undefined; // 让 ZXing 自选
-        running = true;
+        running=true;
         await codeReader.decodeFromVideoDevice(
-          deviceIdToUse,
+          null, // 自动选择
           video,
-          (result, err, controls) => {
+          (result, err, controls)=>{
             if(!running) return;
-            if(result){
-              onResult(result.getText(), controls);
-            } else if(err && !(err instanceof ZXing.NotFoundException)) {
-              // 非“未找到”错误（例如读取异常）
-              console.warn(err);
-            }
+            if(result){ onResult(result.getText()); controls.stop(); }
           },
-          {
-            // 也可以在这里提供约束：facingMode/environment
-            // 但使用 deviceId 通常更稳定
-          }
+          { video:{ facingMode:{ exact:'environment' } } } // 强制使用后置摄像头
         );
-        showHint('Point at a code (QR / Barcode).');
+        showHint('Point at a QR or Barcode.');
       }catch(e){
         console.error(e);
-        showHint('Camera unavailable. Use HTTPS / allow permission.');
+        showHint('Camera unavailable. Try HTTPS / allow permission.');
       }
     }
 
     function stop(){
-      running = false;
+      running=false;
       try{ codeReader?.reset(); }catch{}
     }
 
-    function onResult(val, controls){
-      stop();
-      res.style.display='block';
-      text.textContent = val || '';
-      // URL 快捷打开
-      const isURL = /^https?:\/\//i.test(val);
-      openLink.style.display = isURL ? 'inline-block' : 'none';
-      if(isURL) openLink.href = val;
-      // 自动复制
+    function onResult(val){
+      stop(); res.style.display='block'; text.textContent=val||'';
+      const isURL=/^https?:\/\//i.test(val);
+      openLink.style.display=isURL?'inline-block':'none';
+      if(isURL) openLink.href=val;
       navigator.clipboard?.writeText(val).catch(()=>{});
       showHint('Result copied to clipboard.');
     }
 
-    // 交互
-    launch.onclick = openModal;
-    closeBtn.onclick = closeModal;
-    modal.onclick = e => { if(e.target === modal) closeModal(); };
-    again.onclick = () => { res.style.display='none'; start(); };
-    copyBtn.onclick = async () => {
-      try{ await navigator.clipboard.writeText(text.textContent.trim()); showHint('Copied.'); }catch{}
-    };
-
-    // 页面离开时释放摄像头
-    addEventListener('pagehide', stop);
-    addEventListener('beforeunload', stop);
+    launch.onclick=openModal;
+    closeBtn.onclick=closeModal;
+    modal.onclick=e=>{if(e.target===modal)closeModal();}
+    again.onclick=()=>{res.style.display='none';start();}
+    copyBtn.onclick=async()=>{try{await navigator.clipboard.writeText(text.textContent.trim());showHint('Copied.');}catch{}}
+    addEventListener('pagehide',stop); addEventListener('beforeunload',stop);
   </script>
 </body>
 </html>
