@@ -2,7 +2,7 @@
 <html lang="en">
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Universal Scanner · Light</title>
+<title>Universal Scanner · Ultra Fast</title>
 <style>
   :root{
     --bg:#f8f9fb; --fg:#1b1c1f; --muted:#70757e; --border:rgba(0,0,0,.12);
@@ -19,46 +19,39 @@
     -webkit-font-smoothing:antialiased;
   }
 
-  /* 主界面仅一个圆形红色按钮（扁平化） */
   .launch{
-    width:120px; height:120px; border-radius:50%;
-    display:grid; place-items:center; cursor:pointer; user-select:none;
-    background:var(--btn); color:#fff;
-    font-weight:800; font-size:18px; letter-spacing:.05em;
-    border:none;
-    transition:transform .06s ease, background-color .06s ease, box-shadow .06s ease;
+    width:120px;height:120px;border-radius:50%;
+    display:grid;place-items:center;cursor:pointer;user-select:none;
+    background:var(--btn);color:#fff;font-weight:800;font-size:18px;letter-spacing:.05em;
+    border:none;transition:transform .06s ease,background-color .06s ease,box-shadow .06s ease;
   }
-  .launch:active{ transform:translateY(1px); background:var(--btn-press); }
-  .launch:focus-visible{ outline:none; box-shadow:0 0 0 4px color-mix(in srgb,var(--ring) 35%,transparent); }
+  .launch:active{transform:translateY(1px);background:var(--btn-press)}
+  .launch:focus-visible{outline:none;box-shadow:0 0 0 4px color-mix(in srgb,var(--ring) 35%,transparent)}
 
-  /* 弹窗（无取景框 HUD，极简） */
-  .modal{ position:fixed; inset:0; display:none; z-index:50; background:rgba(0,0,0,.35);
-          padding:calc(env(safe-area-inset-top)+10px) 12px calc(env(safe-area-inset-bottom)+10px); }
-  .modal.show{ display:flex; align-items:center; justify-content:center; }
+  .modal{position:fixed;inset:0;display:none;z-index:50;background:rgba(0,0,0,.35);
+         padding:calc(env(safe-area-inset-top)+10px) 12px calc(env(safe-area-inset-bottom)+10px)}
+  .modal.show{display:flex;align-items:center;justify-content:center}
   .sheet{
-    width:min(92vw,520px); max-height:min(82svh,82dvh);
-    background:#fff; border:1px solid var(--border); border-radius:16px;
-    display:flex; flex-direction:column; overflow:hidden;
+    width:min(92vw,520px);max-height:min(82svh,82dvh);
+    background:#fff;border:1px solid var(--border);border-radius:16px;
+    display:flex;flex-direction:column;overflow:hidden
   }
-  .bar{ display:flex; justify-content:flex-end; padding:10px 12px; border-bottom:1px solid var(--border); }
-  .x{ appearance:none; border:1px solid var(--border); background:#f5f6f7; color:var(--fg);
-      border-radius:8px; padding:6px 10px; font-size:13px; cursor:pointer; }
-  .stage{ position:relative; background:#000; height:clamp(240px,54svh,520px); }
-  video{ width:100%; height:100%; object-fit:cover; }
-
-  .res{ padding:12px; border-top:1px solid var(--border); display:none; color:#222; }
-  .res pre{ margin-top:6px; white-space:pre-wrap; word-break:break-word; font-size:14px; max-height:22svh; overflow:auto; }
-  .actions{ margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; }
-  .btn{ border:1px solid var(--border); background:#f5f6f7; color:#111; border-radius:8px; padding:6px 12px; font-size:13px; text-decoration:none; }
-  .btn.primary{ background:var(--ring); color:#fff; border:none; }
-  .hint{ padding:10px 12px; border-top:1px solid var(--border); color:var(--muted); font-size:13px; text-align:center; }
+  .bar{display:flex;justify-content:flex-end;padding:10px 12px;border-bottom:1px solid var(--border)}
+  .x{appearance:none;border:1px solid var(--border);background:#f5f6f7;color:var(--fg);
+     border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer}
+  .stage{position:relative;background:#000;height:clamp(240px,54svh,520px)}
+  video{width:100%;height:100%;object-fit:cover}
+  .res{padding:12px;border-top:1px solid var(--border);display:none;color:#222}
+  .res pre{margin-top:6px;white-space:pre-wrap;word-break:break-word;font-size:14px;max-height:22svh;overflow:auto}
+  .actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+  .btn{border:1px solid var(--border);background:#f5f6f7;color:#111;border-radius:8px;padding:6px 12px;font-size:13px;text-decoration:none}
+  .btn.primary{background:var(--ring);color:#fff;border:none}
+  .hint{padding:10px 12px;border-top:1px solid var(--border);color:var(--muted);font-size:13px;text-align:center}
 </style>
 
 <body>
-  <!-- 主界面：只有圆形红色按钮 -->
   <button class="launch" id="launch">SCAN</button>
 
-  <!-- 扫码弹窗 -->
   <div class="modal" id="modal" aria-modal="true" role="dialog">
     <div class="sheet">
       <div class="bar"><button class="x" id="close">Close</button></div>
@@ -75,7 +68,7 @@
     </div>
   </div>
 
-  <!-- ZXing 多码制识别库 -->
+  <!-- ZXing 仅作回退用；支持多码制 -->
   <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
   <script>
     const $=id=>document.getElementById(id);
@@ -83,27 +76,18 @@
     const video=$('video'), hint=$('hint'), res=$('res'), text=$('text');
     const copyBtn=$('copy'), again=$('again'), openLink=$('open');
 
-    let codeReader=null, running=false, lastDecodeTs=0;
+    let stream, running=false, codeReader=null, lastTs=0, useNative=false, rVFC=null;
 
-    /* 只启用：二维码 + 常见条形码（更快更稳） */
-    const hints = new Map();
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-      ZXing.BarcodeFormat.QR_CODE,   // 二维码
-      ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8,
-      ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E,
-      ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39,
-      ZXing.BarcodeFormat.ITF, ZXing.BarcodeFormat.CODABAR
-      // 如需 Code93：ZXing.BarcodeFormat.CODE_93
-    ]);
-    hints.set(ZXing.DecodeHintType.TRY_HARDER, false);
+    const desiredFormatsNative = [
+      'qr_code','ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf','codabar'
+    ];
 
-    /* 后置摄像头 + 中低分辨率 + 限帧（更流畅省电） */
     const constraints = {
       video: {
         facingMode: { exact: 'environment' },
-        width: { ideal: 720, max: 960 },
-        height: { ideal: 480, max: 720 },
-        frameRate: { ideal: 24, max: 30 }
+        width:  { ideal: 640, max: 800 },   // 中低分辨率 = 更快
+        height: { ideal: 480, max: 600 },
+        frameRate: { ideal: 30, max: 30 }
       }
     };
 
@@ -113,38 +97,106 @@
 
     async function start(){
       showHint('Starting camera…');
-      if(!codeReader){ codeReader = new ZXing.BrowserMultiFormatReader(hints); }
-      running = true; lastDecodeTs = 0;
+      running=true; lastTs=0;
+
+      // 选择原生 BarcodeDetector（如可用）
+      useNative = 'BarcodeDetector' in window;
+      let supported = [];
+      if(useNative && BarcodeDetector.getSupportedFormats){
+        try { supported = await BarcodeDetector.getSupportedFormats(); }
+        catch { supported = []; }
+        const wanted = desiredFormatsNative.filter(f => supported.includes(f));
+        if(!wanted.length) useNative=false; else detector = new BarcodeDetector({ formats: wanted });
+      }
 
       try{
-        await codeReader.decodeFromVideoDevice(null, video, onFrame, constraints);
-        showHint('Point at a QR / Barcode.');
-        // 启动后启用连续对焦（若支持），并轻微变焦
-        await enableContinuousFocus(video, { zoom: 1.8 });
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
       }catch(e){
-        console.error(e);
-        showHint('Camera unavailable. Try HTTPS / allow permission.');
+        showHint('Camera unavailable. Use HTTPS / allow permission.'); running=false; return;
       }
-    }
 
-    // 节流：每 ~120ms 解一次码，避免主线程过载
-    function onFrame(result, err, controls){
-      if(!running) return;
-      const now = performance.now();
-      if (now - lastDecodeTs < 120) return;
-      lastDecodeTs = now;
+      video.srcObject = stream;
+      await video.play();
 
-      if(result){
-        onResult(result.getText());
-        try{ controls?.stop(); }catch{}
-      }else if(err && !(err instanceof ZXing.NotFoundException)){
-        // 其它错误忽略
+      // 连续对焦 & 轻微变焦 &（可选）手电
+      await tuneCamera(video, { zoom: 2.0, torch: false });
+
+      if(useNative){
+        showHint('Fast mode (native). Point at a QR / Barcode.');
+        startNativeLoop();
+      }else{
+        showHint('Fallback mode. Point at a QR / Barcode.');
+        startZXing();
       }
     }
 
     function stop(){
-      running = false;
+      running=false;
+      if(rVFC){ try{ video.cancelVideoFrameCallback(rVFC); }catch{} rVFC=null; }
       try{ codeReader?.reset(); }catch{}
+      if(stream){ try{ stream.getTracks().forEach(t=>t.stop()); }catch{} stream=null; }
+    }
+
+    /* —— 原生 BarcodeDetector 路径 —— */
+    let detector=null;
+    function startNativeLoop(){
+      const strideMs = 80; // 节流：约 12.5 FPS 解码
+      const centerCrop = () => {
+        const vw = video.videoWidth || 640, vh = video.videoHeight || 480;
+        const size = Math.floor(Math.min(vw, vh) * 0.72); // 中心 72% ROI
+        const sx = Math.floor((vw - size)/2), sy = Math.floor((vh - size)/2);
+        return { sx, sy, size };
+      };
+
+      const tick = async (now, metadata) => {
+        if(!running) return;
+        if (now - lastTs < strideMs) { rVFC = video.requestVideoFrameCallback(tick); return; }
+        lastTs = now;
+
+        try{
+          const { sx, sy, size } = centerCrop();
+          const bmp = await createImageBitmap(video, sx, sy, size, size, { resizeWidth: 512, resizeHeight: 512 });
+          const codes = await detector.detect(bmp);
+          bmp.close?.();
+          if(codes && codes.length){
+            onResult(codes[0].rawValue || codes[0].rawValueText || '');
+            return;
+          }
+        }catch(e){ /* 忽略偶发错误 */ }
+
+        rVFC = video.requestVideoFrameCallback(tick);
+      };
+      rVFC = video.requestVideoFrameCallback(tick);
+    }
+
+    /* —— ZXing 回退路径（限制码制 + 约束 + 节流） —— */
+    function startZXing(){
+      if(!codeReader){
+        const hints = new Map();
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+          ZXing.BarcodeFormat.QR_CODE,
+          ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8,
+          ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E,
+          ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39,
+          ZXing.BarcodeFormat.ITF, ZXing.BarcodeFormat.CODABAR
+        ]);
+        hints.set(ZXing.DecodeHintType.TRY_HARDER, false);
+        codeReader = new ZXing.BrowserMultiFormatReader(hints);
+      }
+
+      const onFrame = (result, err, controls) => {
+        if(!running) return;
+        const now = performance.now();
+        if(now - lastTs < 120) return; // 节流
+        lastTs = now;
+        if(result){
+          try{ controls?.stop(); }catch{}
+          onResult(result.getText());
+        }
+      };
+
+      codeReader.decodeFromVideoDevice(null, video, onFrame, constraints)
+        .catch(e => { showHint('Decode failed. Check permissions.'); console.error(e); });
     }
 
     function onResult(val){
@@ -158,52 +210,40 @@
       showHint('Result copied to clipboard.');
     }
 
-    /* 连续对焦（可选变焦）；设备不支持时静默跳过 */
-    async function enableContinuousFocus(videoEl, { zoom = 1.8 } = {}){
+    /* —— 相机能力调优：连续对焦 + 变焦 (+ 可选手电) —— */
+    async function tuneCamera(videoEl, { zoom = 2.0, torch = false } = {}){
       try{
-        const stream = videoEl.srcObject;
-        if(!stream) return;
-        const track = stream.getVideoTracks?.()[0];
-        if(!track?.getCapabilities) return;
-
-        const caps = track.getCapabilities();
-        const cons = { advanced: [] };
+        const track = videoEl.srcObject?.getVideoTracks?.()[0];
+        const caps = track?.getCapabilities?.() || {};
+        const adv = [];
 
         if (Array.isArray(caps.focusMode)) {
-          if (caps.focusMode.includes('continuous')) {
-            cons.advanced.push({ focusMode: 'continuous' });
-          } else if (caps.focusMode.includes('auto')) {
-            cons.advanced.push({ focusMode: 'auto' });
-          }
+          if (caps.focusMode.includes('continuous')) adv.push({ focusMode: 'continuous' });
+          else if (caps.focusMode.includes('auto')) adv.push({ focusMode: 'auto' });
         }
         if (caps.zoom && typeof caps.zoom.max === 'number') {
           const target = Math.min(zoom, caps.zoom.max);
-          if (target > (caps.zoom.min ?? 1)) cons.advanced.push({ zoom: target });
+          if (target > (caps.zoom.min ?? 1)) adv.push({ zoom: target });
         }
-        // 某些设备没有 focusMode，但有 focusDistance，可尝试中值
-        if (!cons.advanced.length && typeof caps.focusDistance?.min === 'number' && typeof caps.focusDistance?.max === 'number') {
-          const mid = (caps.focusDistance.min + caps.focusDistance.max) / 2;
-          cons.advanced.push({ focusDistance: mid });
-        }
-        if (cons.advanced.length) await track.applyConstraints(cons);
+        if (torch && caps.torch) adv.push({ torch: true });
 
-        // 页面恢复可见时，重新应用一次（有些浏览器会丢设置）
+        if (adv.length) await track.applyConstraints({ advanced: adv });
+
+        // 页面返回前台时重应用，防止设置丢失
         document.addEventListener('visibilitychange', async () => {
           if (!document.hidden) {
-            try{ await track.applyConstraints(cons); }catch{}
+            try{ await track.applyConstraints({ advanced: adv }); }catch{}
           }
         });
-      }catch(e){
-        // 不支持则忽略
-      }
+      }catch(e){ /* 忽略不支持 */ }
     }
 
     // 交互
     launch.onclick = openModal;
     closeBtn.onclick = closeModal;
-    modal.onclick = e => { if(e.target===modal) closeModal(); };
-    again.onclick = () => { res.style.display='none'; start(); };
-    copyBtn.onclick = async () => { try{ await navigator.clipboard.writeText(text.textContent.trim()); showHint('Copied.'); }catch{} };
+    modal.onclick  = e => { if(e.target===modal) closeModal(); };
+    again.onclick  = () => { res.style.display='none'; start(); };
+    copyBtn.onclick= async () => { try{ await navigator.clipboard.writeText(text.textContent.trim()); showHint('Copied.'); }catch{} };
     addEventListener('pagehide', stop);
     addEventListener('beforeunload', stop);
   </script>
