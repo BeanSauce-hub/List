@@ -2,60 +2,58 @@
 <html lang="zh-CN">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>二维码扫描 · 简约版</title>
+<title>二维码扫描 · 极简</title>
 
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0a84ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 
 <style>
-  :root{ --bg:#f5f5f7; --fg:#111113; --muted:#6e6e73; --primary:#0a84ff; --card:#ffffff; --border:rgba(0,0,0,.08); }
+  :root{ --bg:#f5f5f7; --fg:#111; --muted:#6e6e73; --primary:#0a84ff; --card:#fff; --border:rgba(0,0,0,.08); }
   *{box-sizing:border-box} html,body{height:100%}
   body{
     margin:0; background:var(--bg); color:var(--fg);
     font:16px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial;
-    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
     display:flex; align-items:center; justify-content:center; padding:24px;
   }
   .wrap{text-align:center}
   h1{font-size:18px;margin:0 0 10px}
   .sub{color:var(--muted);font-size:13px;margin-bottom:28px}
+
+  /* 中央按钮（无阴影动画，尽量素） */
   .scan-btn{
-    width:170px;height:170px;border-radius:50%;
+    width:168px;height:168px;border-radius:50%;
     display:grid;place-items:center;cursor:pointer;user-select:none;
-    background:linear-gradient(180deg,#fff,#f0f0f3);border:1px solid var(--border);
-    box-shadow:0 1px 0 rgba(255,255,255,.8) inset,0 12px 32px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.08);
-    color:#111;font-weight:800;font-size:22px;transition:transform .12s ease,box-shadow .12s ease;
+    background:#fff;border:1px solid var(--border); font-weight:700; font-size:20px;
   }
-  .scan-btn:active{transform:scale(.98);box-shadow:0 6px 18px rgba(0,0,0,.16),0 1px 2px rgba(0,0,0,.08)}
+
+  /* 弹窗（无动画） */
   .modal{position:fixed;inset:0;display:none}
   .modal.show{display:block}
-  .backdrop{position:absolute;inset:0;background:rgba(0,0,0,.28);backdrop-filter:saturate(120%) blur(8px);opacity:0}
+  .backdrop{position:absolute;inset:0;background:rgba(0,0,0,.3)}
   .sheet{
-    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.9);
-    width:min(520px,92vw);border-radius:24px;overflow:hidden;background:var(--card);
-    border:1px solid var(--border);box-shadow:0 30px 70px rgba(0,0,0,.25);opacity:0;
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:min(520px,92vw);border-radius:16px;overflow:hidden;background:var(--card);
+    border:1px solid var(--border);
   }
-  .sheet header{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:14px 16px;border-bottom:1px solid var(--border)
-  }
-  .title{font-weight:700}
-  .xbtn,.mini{appearance:none;border:1px solid var(--border);background:#fff;color:#111;
-    border-radius:12px;padding:8px 12px;font-size:13px;cursor:pointer}
-  .xbtn{border-radius:999px}
-  .mini.primary{background:var(--primary);border-color:transparent;color:#fff}
+  .sheet header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border)}
+  .xbtn,.mini{appearance:none;border:1px solid var(--border);background:#fff;color:#111;border-radius:10px;padding:8px 12px;font-size:13px;cursor:pointer}
   .stage{position:relative;background:#000;aspect-ratio:9/16}
   video{width:100%;height:100%;object-fit:cover}
-  .hud{position:absolute;inset:0;pointer-events:none}
+
+  /* 简单居中取景框（静态边框） */
+  .frame{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .box{width:240px;height:240px;border:2px solid #fff;border-radius:12px}
+
   .res{padding:12px 14px;border-top:1px solid var(--border);display:none}
   .res pre{margin:8px 0 0;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas;white-space:pre-wrap;word-break:break-word}
   .panel{padding:12px 14px;display:flex;gap:8px;align-items:center;justify-content:space-between;border-top:1px solid var(--border)}
   .err{color:#b00020;font-size:13px}
   .muted{color:var(--muted);font-size:12px}
+
   @media (prefers-color-scheme:dark){
     :root{--bg:#0b0b0f;--fg:#f2f2f7;--card:#16161a;--border:rgba(255,255,255,.08);--muted:#9b9ba1}
-    .scan-btn{background:linear-gradient(180deg,#1f1f25,#18181c);color:#f2f2f7}
+    .scan-btn{background:#1c1c21;color:#f2f2f7;border-color:var(--border)}
     .xbtn,.mini{background:#1c1c21;color:#f2f2f7;border-color:var(--border)}
   }
 </style>
@@ -63,36 +61,22 @@
 <body>
   <div class="wrap">
     <h1>二维码扫描</h1>
-    <div class="sub">苹果风 · 一键扫描 · 自动识别</div>
+    <div class="sub">极简 · 一键扫描</div>
     <button class="scan-btn" id="openScan">扫描</button>
   </div>
 
   <!-- 弹窗 -->
   <div class="modal" id="modal">
     <div class="backdrop" id="backdrop"></div>
-    <div class="sheet" id="sheet">
+    <div class="sheet">
       <header>
-        <div class="title">扫描二维码</div>
+        <div>扫描二维码</div>
         <button class="xbtn" id="close">完成</button>
       </header>
 
       <div class="stage">
         <video id="v" playsinline muted></video>
-        <!-- HUD -->
-        <svg class="hud" viewBox="0 0 1000 1778" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="hudGrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#00d4ff"/><stop offset="50%" stop-color="#0a84ff"/><stop offset="100%" stop-color="#7c7cff"/>
-            </linearGradient>
-            <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
-              <feGaussianBlur stdDeviation="4" result="b"/>
-              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-          </defs>
-          <rect id="scanRect" x="380" y="669" width="240" height="240" rx="22"
-                fill="none" stroke="url(#hudGrad)" stroke-width="6"
-                stroke-dasharray="32 22" filter="url(#glow)"/>
-        </svg>
+        <div class="frame"><div class="box"></div></div>
       </div>
 
       <div class="res" id="res">
@@ -100,7 +84,7 @@
         <pre id="text"></pre>
         <div style="display:flex;gap:8px;margin-top:8px">
           <button class="mini" id="copy">复制</button>
-          <a class="mini primary" id="open" target="_blank" rel="noreferrer" style="display:none">打开链接</a>
+          <a class="mini" id="open" target="_blank" rel="noreferrer" style="display:none">打开链接</a>
           <button class="mini" id="again">继续扫描</button>
         </div>
       </div>
@@ -112,63 +96,76 @@
     </div>
   </div>
 
+  <!-- jsQR（如需完全离线，将其源码内联到本页） -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <script>
-  if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(()=>{});}
-  const $=id=>document.getElementById(id);
-  const modal=$('modal'),backdrop=$('backdrop'),sheet=$('sheet'),
-        openScan=$('openScan'),closeBtn=$('close'),
-        v=$('v'),err=$('err'),hint=$('hint'),
-        res=$('res'),text=$('text'),copyBtn=$('copy'),
-        again=$('again'),openLink=$('open'),hudRect=$('scanRect');
-  let stream=null,raf=null,scanning=false;
-  const cvs=document.createElement('canvas'),ctx=cvs.getContext('2d');
-  const vib=p=>{try{navigator.vibrate?.(p);}catch{}};
-  const showErr=m=>err.textContent=m||'';
-  function springIn(){
-    backdrop.animate([{opacity:0},{opacity:1}],{duration:300,fill:'forwards',easing:'ease-out'});
-    sheet.animate([
-      {transform:'translate(-50%,-50%) scale(0.9)',opacity:0},
-      {transform:'translate(-50%,-50%) scale(1.05)',opacity:1,offset:0.6,easing:'cubic-bezier(0.22,1.2,0.36,1)'},
-      {transform:'translate(-50%,-50%) scale(1)',opacity:1}
-    ],{duration:520,fill:'forwards'});
-  }
-  function springOut(){
-    sheet.animate([{opacity:1,transform:'translate(-50%,-50%) scale(1)'},{opacity:0,transform:'translate(-50%,-50%) scale(0.96)'}],
-      {duration:200,fill:'forwards',easing:'cubic-bezier(.2,0,.2,1)'});
-    backdrop.animate([{opacity:1},{opacity:0}],{duration:180,fill:'forwards'});
-  }
-  function startHud(){
-    hudRect.animate([{strokeDashoffset:0},{strokeDashoffset:-300}],
-      {duration:1400,iterations:Infinity,easing:'linear'});
-  }
-  const showModal=async()=>{
-    modal.classList.add('show');springIn();vib(10);
-    await start(); // 自动开始
-  };
-  const hideModal=()=>{stop();springOut();setTimeout(()=>modal.classList.remove('show'),200);res.style.display='none';text.textContent='';openLink.style.display='none';};
-  const start=async()=>{
-    showErr('');hint.textContent='正在打开相机…';
-    try{
-      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
-    }catch(e){
-      const n=e?.name||'';
-      showErr(n==='NotAllowedError'?'相机权限被拒绝':'无法访问相机，需要 HTTPS 或 localhost');
-      vib([30,40,30]);return;
+    // 可留：PWA SW 注册（若不需要，删除这段）
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
+
+    const $=id=>document.getElementById(id);
+    const modal=$('modal'),backdrop=$('backdrop'),openScan=$('openScan'),closeBtn=$('close');
+    const v=$('v'),err=$('err'),hint=$('hint'),res=$('res'),text=$('text'),copyBtn=$('copy'),again=$('again'),openLink=$('open');
+
+    let stream=null,raf=null,scanning=false;
+    const cvs=document.createElement('canvas'),ctx=cvs.getContext('2d');
+
+    const showModal=()=>{ modal.classList.add('show'); start(); };
+    const hideModal=()=>{ stop(); modal.classList.remove('show'); res.style.display='none'; text.textContent=''; openLink.style.display='none'; };
+    const showErr=m=>{ err.textContent=m||''; };
+
+    async function start(){
+      showErr(''); hint.textContent='正在打开相机…';
+      try{
+        stream=await navigator.mediaDevices.getUserMedia({
+          video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false
+        });
+      }catch(e){
+        const n=e?.name||'';
+        showErr(n==='NotAllowedError'?'相机权限被拒绝':'无法访问相机，需要 HTTPS 或 localhost');
+        return;
+      }
+      v.srcObject=stream; await v.play();
+      scanning=true; hint.textContent='对准二维码即可识别';
+      loop();
     }
-    v.srcObject=stream;await v.play();scanning=true;hint.textContent='对准二维码即可识别';startHud();vib(12);loop();
-  };
-  const stop=()=>{if(raf)cancelAnimationFrame(raf);if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}scanning=false;hint.textContent='';};
-  const loop=()=>{if(!scanning)return;if(v.readyState>=2&&v.videoWidth){const vw=v.videoWidth,vh=v.videoHeight,s=Math.min(640/Math.min(vw,vh),1);
-    const w=Math.round(vw*s),h=Math.round(vh*s);cvs.width=w;cvs.height=h;ctx.drawImage(v,0,0,w,h);
-    const img=ctx.getImageData(0,0,w,h);const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'attemptBoth'});
-    if(code&&code.data){onResult(code.data);return;}}raf=requestAnimationFrame(loop);};
-  const onResult=val=>{stop();res.style.display='block';text.textContent=val||'';const isURL=/^https?:\/\//i.test(val);
-    openLink.style.display=isURL?'inline-block':'none';if(isURL)openLink.href=val;navigator.clipboard?.writeText(val).catch(()=>{});hint.textContent='已复制到剪贴板';vib([8,30,8]);};
-  openScan.onclick=showModal;backdrop.onclick=hideModal;closeBtn.onclick=hideModal;
-  again.onclick=()=>{res.style.display='none';start();};
-  copyBtn.onclick=async()=>{try{await navigator.clipboard.writeText(text.textContent.trim());hint.textContent='已复制';vib(10);}catch{}};
-  addEventListener('pagehide',stop);addEventListener('beforeunload',stop);
+
+    function stop(){
+      if(raf) cancelAnimationFrame(raf), raf=null;
+      if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+      scanning=false; hint.textContent='';
+    }
+
+    function loop(){
+      if(!scanning) return;
+      if(v.readyState>=2 && v.videoWidth){
+        const vw=v.videoWidth, vh=v.videoHeight, s=Math.min(640/Math.min(vw,vh),1);
+        const w=Math.round(vw*s), h=Math.round(vh*s);
+        cvs.width=w; cvs.height=h; ctx.drawImage(v,0,0,w,h);
+        const img=ctx.getImageData(0,0,w,h);
+        const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'attemptBoth'});
+        if(code && code.data){ onResult(code.data); return; }
+      }
+      raf=requestAnimationFrame(loop);
+    }
+
+    function onResult(val){
+      stop();
+      res.style.display='block';
+      text.textContent=val||'';
+      const isURL=/^https?:\/\//i.test(val);
+      openLink.style.display=isURL?'inline-block':'none';
+      if(isURL) openLink.href=val;
+      navigator.clipboard?.writeText(val).catch(()=>{});
+      hint.textContent='已复制到剪贴板';
+    }
+
+    // 交互
+    openScan.onclick=showModal;
+    backdrop.onclick=hideModal; closeBtn.onclick=hideModal;
+    again.onclick=()=>{ res.style.display='none'; start(); };
+    copyBtn.onclick=async()=>{ try{ await navigator.clipboard.writeText(text.textContent.trim()); hint.textContent='已复制'; }catch{} };
+
+    addEventListener('pagehide',stop); addEventListener('beforeunload',stop);
   </script>
 </body>
 </html>
