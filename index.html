@@ -1,127 +1,160 @@
-<!-- ZXing：多码制识别（QR + 一维码） -->
-<script src="https://unpkg.com/@zxing/library@0.20.0"></script>
-<script>
-  const $=id=>document.getElementById(id);
-  const launch=$('launch'), modal=$('modal'), closeBtn=$('close');
-  const video=$('video'), hint=$('hint'), res=$('res'), text=$('text');
-  const copyBtn=$('copy'), again=$('again'), openLink=$('open');
-
-  let codeReader=null, running=false, lastDecodeTs=0;
-
-  // 只启用：QR + 常见条形码（更快）
-  const hints = new Map();
-  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-    ZXing.BarcodeFormat.QR_CODE,
-    ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8,
-    ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E,
-    ZXing.BarcodeFormat.CODE_128, ZXing.BarcodeFormat.CODE_39,
-    ZXing.BarcodeFormat.ITF, ZXing.BarcodeFormat.CODABAR
-  ]);
-  hints.set(ZXing.DecodeHintType.TRY_HARDER, false); // 关闭深度重试，提速
-
-  // 后置摄像头 + 中低分辨率 + 限帧（速度/耗电的甜点位）
-  const constraints = {
-    video: {
-      facingMode: { exact: 'environment' },
-      width:  { ideal: 720, max: 960 },
-      height: { ideal: 480, max: 720 },
-      frameRate: { ideal: 24, max: 30 }
-    }
-  };
-
-  const openModal=()=>{ modal.classList.add('show'); start(); };
-  const closeModal=()=>{ stop(); modal.classList.remove('show'); res.style.display='none'; text.textContent=''; openLink.style.display='none'; };
-  const showHint=m=>{ hint.textContent=m||''; };
-
-  async function start(){
-    showHint('Starting camera…');
-    if(!codeReader){ codeReader = new ZXing.BrowserMultiFormatReader(hints); }
-    running = true; lastDecodeTs = 0;
-
-    try{
-      // 用 constraints 版本，显式要求后摄/分辨率/帧率
-      await codeReader.decodeFromConstraints(
-        constraints,
-        video,
-        onFrame
-      );
-      showHint('Point at a QR / Barcode.');
-      // 成功拉流后，尝试连续对焦 + 轻微变焦（若设备支持）
-      await enableContinuousFocus(video, { zoom: 1.8 });
-    }catch(e){
-      console.error(e);
-      showHint('Camera unavailable. Use HTTPS / allow permission.');
-    }
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Universal Scanner · Minimal</title>
+<style>
+  :root{
+    --bg:#0e0f12; --fg:#e7e9ee; --muted:#9aa1ad; --border:rgba(255,255,255,.12);
+    --btn:#e6372a; --btn-press:#c82f24; --ring:#2563eb;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--fg);
+    min-height:100svh;
+    padding:calc(env(safe-area-inset-top) + 6svh) 4vw calc(env(safe-area-inset-bottom) + 6svh);
+    display:flex; align-items:center; justify-content:center;
+    font:16px/1.5 ui-sans-serif,system-ui,-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial;
+    -webkit-font-smoothing:antialiased;
   }
 
-  // 节流：每 ~120ms 解一次码，避免主线程过载
-  function onFrame(result, err, controls){
-    if(!running) return;
-    const now = performance.now();
-    if (now - lastDecodeTs < 120) return;
-    lastDecodeTs = now;
-
-    if(result){
-      onResult(result.getText());
-      try{ controls?.stop(); }catch{}
-    }else if(err && !(err instanceof ZXing.NotFoundException)){
-      // 其它错误忽略
-    }
+  /* 扁平圆形红色按钮（仅此一物） */
+  .launch{
+    width:120px;height:120px;border-radius:50%;
+    display:grid;place-items:center;cursor:pointer;user-select:none;
+    background:var(--btn); color:#fff;
+    font-weight:800;font-size:18px;letter-spacing:.05em;
+    border:1px solid transparent;
+    transition:transform .06s ease,background-color .06s ease,border-color .06s ease,box-shadow .06s ease;
+  }
+  .launch:active{transform:translateY(1px);background:var(--btn-press);}
+  .launch:focus-visible{
+    outline:none;
+    border-color:color-mix(in srgb,var(--ring) 70%,transparent);
+    box-shadow:0 0 0 4px color-mix(in srgb,var(--ring) 28%,transparent);
   }
 
-  function stop(){
-    running = false;
-    try{ codeReader?.reset(); }catch{}
+  /* 弹窗（极简，无取景框 HUD） */
+  .modal{position:fixed;inset:0;display:none;z-index:50;background:rgba(0,0,0,.55);
+         padding:calc(env(safe-area-inset-top)+10px) 12px calc(env(safe-area-inset-bottom)+10px);}
+  .modal.show{display:flex;align-items:center;justify-content:center}
+  .sheet{
+    width:min(92vw,520px);max-height:min(82svh,82dvh);
+    background:#12131a;border:1px solid var(--border);border-radius:14px;
+    display:flex;flex-direction:column;overflow:hidden;
   }
+  .bar{display:flex;justify-content:flex-end;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
+  .x{appearance:none;border:1px solid var(--border);background:#161821;color:var(--fg);
+     border-radius:10px;padding:6px 10px;font-size:13px;cursor:pointer}
+  .stage{position:relative;background:#000;height:clamp(240px,54svh,520px)}
+  video{width:100%;height:100%;object-fit:cover}
 
-  function onResult(val){
-    stop();
-    res.style.display='block';
-    text.textContent = val || '';
-    const isURL = /^https?:\/\//i.test(val);
-    openLink.style.display = isURL ? 'inline-block' : 'none';
-    if(isURL) openLink.href = val;
-    navigator.clipboard?.writeText(val).catch(()=>{});
-    showHint('Result copied to clipboard.');
-  }
+  .res{padding:10px 12px;border-top:1px solid var(--border);display:none;color:#cfd5df}
+  .res pre{margin-top:6px;white-space:pre-wrap;word-break:break-word;font-size:13px;max-height:22svh;overflow:auto}
+  .actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+  .btn{border:1px solid var(--border);background:#161821;color:var(--fg);border-radius:10px;padding:6px 12px;font-size:13px;text-decoration:none}
+  .btn.primary{background:#2563eb;border-color:transparent}
+  .hint{padding:8px 12px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+</style>
 
-  // 连续对焦（若支持）+ 轻微变焦；不支持则静默
-  async function enableContinuousFocus(videoEl, { zoom = 1.8 } = {}){
-    try{
-      const stream = videoEl.srcObject;
-      if(!stream) return;
-      const track = stream.getVideoTracks?.()[0];
-      if(!track?.getCapabilities) return;
+<body>
+  <!-- 主界面只有一个圆形按钮 -->
+  <button class="launch" id="launch">SCAN</button>
 
-      const caps = track.getCapabilities();
-      const adv = [];
+  <!-- 扫码弹窗（自动开始，支持条形码+二维码） -->
+  <div class="modal" id="modal" aria-modal="true" role="dialog">
+    <div class="sheet">
+      <div class="bar"><button class="x" id="close">Close</button></div>
+      <div class="stage">
+        <video id="video" playsinline muted></video>
+      </div>
+      <div class="res" id="res">
+        <pre id="text"></pre>
+        <div class="actions">
+          <button class="btn" id="copy">Copy</button>
+          <a class="btn primary" id="open" target="_blank" rel="noreferrer" style="display:none">Open Link</a>
+          <button class="btn" id="again">Scan Again</button>
+        </div>
+      </div>
+      <div class="hint" id="hint">Allow camera access to start scanning.</div>
+    </div>
+  </div>
 
-      if (Array.isArray(caps.focusMode)) {
-        if (caps.focusMode.includes('continuous')) adv.push({ focusMode: 'continuous' });
-        else if (caps.focusMode.includes('auto')) adv.push({ focusMode: 'auto' });
+  <!-- ZXing：多码制识别（QR + 一维码） -->
+  <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+  <script>
+    const $=id=>document.getElementById(id);
+    const launch=$('launch'), modal=$('modal'), closeBtn=$('close');
+    const video=$('video'), hint=$('hint'), res=$('res'), text=$('text');
+    const copyBtn=$('copy'), again=$('again'), openLink=$('open');
+
+    let codeReader=null, running=false;
+
+    const openModal=()=>{ modal.classList.add('show'); start(); };
+    const closeModal=()=>{ stop(); modal.classList.remove('show'); res.style.display='none'; text.textContent=''; openLink.style.display='none'; };
+    const showHint=m=>{ hint.textContent=m||''; };
+
+    // CHANGED: 删除设备枚举；直接强制后置摄像头
+    const constraints = { // 仅对后置摄像头
+      video: { facingMode: { exact: 'environment' } }
+    };
+
+    async function start(){
+      showHint('Starting camera…');
+      if(!codeReader){ codeReader = new ZXing.BrowserMultiFormatReader(); }
+      try{
+        running = true;
+
+        // CHANGED: 使用 decodeFromConstraints，传入后置摄像头约束
+        await codeReader.decodeFromConstraints(
+          constraints,
+          video,
+          (result, err, controls) => {
+            if(!running) return;
+            if(result){
+              onResult(result.getText());
+              try{ controls?.stop(); }catch{}
+            } else if(err && !(err instanceof ZXing.NotFoundException)) {
+              console.warn(err);
+            }
+          }
+        );
+
+        showHint('Back camera active. Point at a QR / Barcode.');
+      }catch(e){
+        console.error(e);
+        showHint('Camera unavailable (need HTTPS or permission).');
       }
-      if (caps.zoom && typeof caps.zoom.max === 'number') {
-        const target = Math.min(zoom, caps.zoom.max);
-        if (target > (caps.zoom.min ?? 1)) adv.push({ zoom: target });
-      }
-      if (adv.length) await track.applyConstraints({ advanced: adv });
+    }
 
-      // 页面回到前台时，重新应用一次，防止设置丢失
-      document.addEventListener('visibilitychange', async () => {
-        if (!document.hidden) {
-          try{ await track.applyConstraints({ advanced: adv }); }catch{}
-        }
-      });
-    }catch{}
-  }
+    function stop(){
+      running = false;
+      try{ codeReader?.reset(); }catch{}
+    }
 
-  // 交互
-  launch.onclick = openModal;
-  closeBtn.onclick = closeModal;
-  modal.onclick = e => { if(e.target === modal) closeModal(); };
-  again.onclick = () => { res.style.display='none'; start(); };
-  copyBtn.onclick = async () => { try{ await navigator.clipboard.writeText(text.textContent.trim()); showHint('Copied.'); }catch{} };
+    function onResult(val){
+      stop();
+      res.style.display='block';
+      text.textContent = val || '';
+      const isURL = /^https?:\/\//i.test(val);
+      openLink.style.display = isURL ? 'inline-block' : 'none';
+      if(isURL) openLink.href = val;
+      navigator.clipboard?.writeText(val).catch(()=>{});
+      showHint('Result copied to clipboard.');
+    }
 
-  addEventListener('pagehide', stop);
-  addEventListener('beforeunload', stop);
-</script>
+    // 交互
+    launch.onclick = openModal;
+    closeBtn.onclick = closeModal;
+    modal.onclick = e => { if(e.target === modal) closeModal(); };
+    again.onclick = () => { res.style.display='none'; start(); };
+    copyBtn.onclick = async () => {
+      try{ await navigator.clipboard.writeText(text.textContent.trim()); showHint('Copied.'); }catch{}
+    };
+
+    addEventListener('pagehide', stop);
+    addEventListener('beforeunload', stop);
+  </script>
+</body>
+</html>
