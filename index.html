@@ -21,50 +21,48 @@
   .wrap{width:100%; max-width:720px; display:flex; flex-direction:column; gap:12px}
 
   /* 顶部工具栏 */
-  .toolbar{
-    display:flex; align-items:center; justify-content:space-between; gap:10px;
-  }
-  .title{font-weight:700; font-size:18px}
-  .actions{display:flex; gap:8px; flex-wrap:wrap}
+  .toolbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .title{ font-weight:700; font-size:18px }
+  .actions{ display:flex; gap:8px; flex-wrap:wrap }
   .btn{
     appearance:none; border:1px solid var(--border); background:#1a1d25; color:var(--fg);
     padding:8px 12px; border-radius:10px; font-size:14px; cursor:pointer; text-decoration:none;
   }
-  .btn.primary{background:var(--btn); border-color:transparent}
-  .btn.primary:active{background:var(--btn-press)}
-  .btn:focus-visible{outline:none; box-shadow:0 0 0 3px color-mix(in srgb,var(--ring) 32%,transparent)}
+  .btn.primary{ background:var(--btn); border-color:transparent }
+  .btn.primary:active{ background:var(--btn-press) }
+  .btn:focus-visible{ outline:none; box-shadow:0 0 0 3px color-mix(in srgb,var(--ring) 32%,transparent) }
 
   /* 表格卡片 */
-  .card{background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden}
-  .thead, .trow{display:grid; grid-template-columns: 1fr 96px; align-items:center}
-  .thead{padding:10px 12px; border-bottom:1px solid var(--border); color:#cfd5df; font-size:13px}
-  .trow{padding:8px 12px; border-top:1px solid var(--border)}
-  .cell{min-height:40px; display:flex; align-items:center; color:#fff; overflow:hidden}
+  .card{ background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden }
+  .thead, .trow{ display:grid; grid-template-columns: 1fr 96px; align-items:center }
+  .thead{ padding:10px 12px; border-bottom:1px solid var(--border); color:#cfd5df; font-size:13px }
+  .trow{ padding:8px 12px; border-top:1px solid var(--border) }
+  .cell{ min-height:40px; display:flex; align-items:center; color:#fff; overflow:hidden }
   .cell input{
     width:100%; background:transparent; border:none; color:#fff; font:inherit; padding:6px 8px;
     border-radius:8px; outline:none;
   }
-  .cell input::placeholder{color:#717784}
-  .row-actions{display:flex; gap:6px; justify-content:flex-end}
-  .small{padding:6px 10px; font-size:12px; border-radius:9px}
+  .cell input::placeholder{ color:#717784 }
+  .row-actions{ display:flex; gap:6px; justify-content:flex-end }
+  .small{ padding:6px 10px; font-size:12px; border-radius:9px }
 
   /* 扫码弹窗（沿用第一阶段逻辑） */
-  .modal{position:fixed; inset:0; display:none; z-index:50; background:rgba(0,0,0,.55);
-         padding:calc(env(safe-area-inset-top)+10px) 12px calc(env(safe-area-inset-bottom)+10px);}
-  .modal.show{display:flex; align-items:center; justify-content:center}
+  .modal{ position:fixed; inset:0; display:none; z-index:50; background:rgba(0,0,0,.55);
+          padding:calc(env(safe-area-inset-top)+10px) 12px calc(env(safe-area-inset-bottom)+10px); }
+  .modal.show{ display:flex; align-items:center; justify-content:center }
   .sheet{
     width:min(92vw,520px); max-height:min(82svh,82dvh);
     background:#12131a; border:1px solid var(--border); border-radius:14px;
     display:flex; flex-direction:column; overflow:hidden;
   }
-  .bar{display:flex; justify-content:flex-end; gap:8px; align-items:center; padding:10px 12px; border-bottom:1px solid var(--border)}
-  .x{appearance:none; border:1px solid var(--border); background:#161821; color:#e7e9ee;
-     border-radius:10px; padding:6px 10px; font-size:13px; cursor:pointer}
-  .stage{position:relative; background:#000; height:clamp(240px,54svh,520px)}
-  video{width:100%; height:100%; object-fit:cover}
-  .res{padding:10px 12px; border-top:1px solid var(--border); display:none; color:#cfd5df}
-  .res pre{margin-top:6px; white-space:pre-wrap; word-break:break-word; font-size:13px; max-height:22svh; overflow:auto}
-  .hint{padding:8px 12px; border-top:1px solid var(--border); color:#9aa1ad; font-size:12.5px; text-align:center}
+  .bar{ display:flex; justify-content:flex-end; gap:8px; align-items:center; padding:10px 12px; border-bottom:1px solid var(--border) }
+  .x{ appearance:none; border:1px solid var(--border); background:#161821; color:#e7e9ee;
+      border-radius:10px; padding:6px 10px; font-size:13px; cursor:pointer }
+  .stage{ position:relative; background:#000; height:clamp(240px,54svh,520px) }
+  video{ width:100%; height:100%; object-fit:cover }
+  .res{ padding:10px 12px; border-top:1px solid var(--border); display:none; color:#cfd5df }
+  .res pre{ margin-top:6px; white-space:pre-wrap; word-break:break-word; font-size:13px; max-height:22svh; overflow:auto }
+  .hint{ padding:8px 12px; border-top:1px solid var(--border); color:#9aa1ad; font-size:12.5px; text-align:center }
 </style>
 
 <body>
@@ -101,18 +99,17 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <script>
-    // ====== 表格逻辑 ======
+    /************ 表格逻辑 ************/
     const $=id=>document.getElementById(id);
     const tbody=$('tbody');
     const addScanBtn=$('addScan');
     const exportBtn=$('exportXlsx');
 
-    // 新增一行（可选：预填 value）
     function addRow(value=''){
       const row=document.createElement('div');
       row.className='trow';
       row.innerHTML=`
-        <div class="cell"><input type="text" placeholder="扫描结果将填入这里" value="${value.replace?.(/"/g,'&quot;') || ''}"></div>
+        <div class="cell"><input type="text" placeholder="扫描结果将填入这里" value="${(value??'').toString().replace(/"/g,'&quot;')}"></div>
         <div class="row-actions">
           <button class="btn small" data-action="rescan">重扫</button>
           <button class="btn small" data-action="del">删除</button>
@@ -122,13 +119,11 @@
       return row;
     }
 
-    // 找到“第一格空单元格”的 input
     function getFirstEmptyInput(){
       const inputs=[...tbody.querySelectorAll('input')];
       return inputs.find(i => !i.value.trim());
     }
 
-    // 行内操作：重扫 / 删除
     tbody.addEventListener('click', (e)=>{
       const btn=e.target.closest('button');
       if(!btn) return;
@@ -143,22 +138,26 @@
       }
     });
 
-    // 导出 XLSX（只导出一列）
     exportBtn.onclick=()=>{
       const data = [['Code']];
       tbody.querySelectorAll('input').forEach(i => data.push([i.value || '']));
       const ws = XLSX.utils.aoa_to_sheet(data);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-      XLSX.writeFile(wb, 'codes.xlsx');
+
+      // 带日期文件名
+      const dt = new Date();
+      const name = `codes-${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}.xlsx`;
+      XLSX.writeFile(wb, name);
     };
 
-    // ====== 扫码逻辑（延续第一阶段，不改识别方式） ======
+    /************ 扫码逻辑（后置摄像头，ZXing） ************/
     const modal=$('modal'), closeBtn=$('close');
     const video=$('video'), hint=$('hint'), resBox=$('res'), textBox=$('text');
 
     let codeReader=null, running=false, targetInput=null;
 
+    // 只用后置摄像头（若 exact 不被支持，可改为 ideal）
     const constraints = { video: { facingMode: { exact: 'environment' } } };
 
     function openModalAndScan(){
@@ -183,7 +182,6 @@
           (result, err, controls)=>{
             if(!running) return;
             if(result){
-              // 成功：填入目标 input（或新增行）
               const value=result.getText() || '';
               onScanSuccess(value);
               try{ controls?.stop(); }catch{}
@@ -205,7 +203,6 @@
     }
 
     function onScanSuccess(val){
-      // 优先写入 targetInput，否则写入第一空格；若都没有，则新增一行
       let input = targetInput || getFirstEmptyInput();
       if(!input){
         const row = addRow('');
@@ -213,18 +210,16 @@
       }
       input.value = val;
 
-      // 清理状态 & 反馈
       targetInput=null;
       resBox.style.display='block';
       textBox.textContent=val;
       hint.textContent='Result copied to clipboard.';
       navigator.clipboard?.writeText(val).catch(()=>{});
 
-      // 自动关闭弹窗（可选：如需停留请注释掉下面两行）
+      // 扫完自动关闭（如需停留，注释掉）
       setTimeout(closeModal, 400);
     }
 
-    // 顶部“＋ 扫描并添加”按钮：默认把结果填入“第一个空格”，若没有就先加一行
     addScanBtn.onclick=()=>{
       targetInput = getFirstEmptyInput();
       if(!targetInput){
@@ -233,15 +228,13 @@
       openModalAndScan();
     };
 
-    // 关闭弹窗
     closeBtn.onclick=closeModal;
     modal.onclick=e=>{ if(e.target===modal) closeModal(); };
 
-    // 页面离开时释放摄像头
     addEventListener('pagehide', stopScan);
     addEventListener('beforeunload', stopScan);
 
-    // 初始给 3 行空白，方便上手（可改为 0）
+    // 初始给 3 行空白（可改为 0）
     for(let i=0;i<3;i++) addRow('');
   </script>
 </body>
