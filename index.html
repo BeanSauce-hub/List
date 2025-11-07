@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Scanner → XLSX (One Column)</title>
+<title>Scanner → XLSX (Editable Table)</title>
 <style>
   :root{
     --bg:#0e0f12; --fg:#e7e9ee; --muted:#9aa1ad; --card:#14161c; --border:rgba(255,255,255,.12);
@@ -58,13 +58,20 @@
   .add:active{filter:brightness(.95)}
   .add:focus-visible{outline:none; box-shadow:0 0 0 3px color-mix(in srgb,var(--ring) 32%,transparent)}
 
-  .trow{ padding:8px 12px; border-top:1px solid var(--border) }
-  .cell{ min-height:40px; display:flex; align-items:center; color:#fff; overflow:hidden }
+  .trow{ padding:8px 12px; border-top:1px solid var(--border); display:grid; grid-template-columns: 1fr 40px; align-items:center }
+  .cell{ position:relative; min-height:40px; display:flex; align-items:center; color:#fff; overflow:hidden }
   .cell input{
-    width:100%; background:transparent; border:none; color:#fff; font:inherit; padding:6px 8px;
+    flex:1; background:transparent; border:none; color:#fff; font:inherit; padding:6px 8px;
     border-radius:8px; outline:none;
   }
   .cell input::placeholder{ color:#717784 }
+  .clear-btn{
+    width:28px; height:28px; border-radius:50%; border:none; background:#1a1d25;
+    color:#cfcfcf; cursor:pointer; font-size:16px; line-height:1; display:grid; place-items:center;
+    transition:background-color .1s ease;
+  }
+  .clear-btn:hover{background:#2a2e3a;}
+  .clear-btn:active{background:#20232b;}
 
   /* 扫码弹窗 */
   .modal{ position:fixed; inset:0; display:none; z-index:50; background:rgba(0,0,0,.55);
@@ -132,7 +139,6 @@
     startBtn.onclick=()=>{
       landing.style.display='none';
       app.style.display='block';
-      // 初始给 3 行空白（可改为 0）
       if(!tbody.hasChildNodes()){
         for(let i=0;i<3;i++) addRow('');
       }
@@ -151,11 +157,20 @@
         <div class="cell">
           <input type="text" placeholder="扫描结果将填入这里" value="${(value??'').toString().replace(/"/g,'&quot;')}">
         </div>
-        <div></div>
+        <button class="clear-btn" title="清空">×</button>
       `;
       tbody.appendChild(row);
       return row;
     }
+
+    // 清空按钮
+    tbody.addEventListener('click', e=>{
+      const btn=e.target.closest('.clear-btn');
+      if(btn){
+        const input=btn.parentElement.querySelector('input');
+        if(input) input.value='';
+      }
+    });
 
     function getFirstEmptyInput(){
       const inputs=[...tbody.querySelectorAll('input')];
@@ -178,9 +193,8 @@
     const modal=$('modal'), closeBtn=$('close');
     const video=$('video'), hint=$('hint'), resBox=$('res'), textBox=$('text');
 
-    let codeReader=null, running=false, targetInput=null;
+    let codeReader=null, running=false;
 
-    // 只用后置摄像头（若 exact 不被支持，可改为 ideal）
     const constraints = { video: { facingMode: { exact: 'environment' } } };
 
     function openModalAndScan(){
@@ -231,24 +245,18 @@
         input = addRow('').querySelector('input');
       }
       input.value = val;
-
       resBox.style.display='block';
       textBox.textContent=val;
       hint.textContent='Result copied to clipboard.';
       navigator.clipboard?.writeText(val).catch(()=>{});
-
-      // 扫完自动关闭（如需停留，注释掉）
       setTimeout(closeModal, 400);
     }
 
-    // 表头“＋”按钮：只通过它来触发扫码
     addBtn.onclick=()=>{ openModalAndScan(); };
 
-    // 关闭弹窗
     closeBtn.onclick=closeModal;
     modal.onclick=e=>{ if(e.target===modal) closeModal(); };
 
-    // 页面离开释放摄像头
     addEventListener('pagehide', stopScan);
     addEventListener('beforeunload', stopScan);
   </script>
