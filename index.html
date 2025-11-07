@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Scanner → XLSX (1-Column)</title>
+<title>Scanner → XLSX (One Column)</title>
 <style>
   :root{
     --bg:#0e0f12; --fg:#e7e9ee; --muted:#9aa1ad; --card:#14161c; --border:rgba(255,255,255,.12);
@@ -20,22 +20,44 @@
   }
   .wrap{width:100%; max-width:720px; display:flex; flex-direction:column; gap:12px}
 
-  /* 顶部工具栏 */
-  .toolbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
-  .title{ font-weight:700; font-size:18px }
-  .actions{ display:flex; gap:8px; flex-wrap:wrap }
+  /* —— Landing —— */
+  #landing{width:100%; display:flex; align-items:center; justify-content:center;}
+  .start{
+    width:180px;height:180px;border-radius:50%;
+    display:grid;place-items:center;cursor:pointer;user-select:none;
+    background:var(--btn);color:#fff;font-weight:800;font-size:24px;letter-spacing:.05em;
+    border:none;transition:transform .06s ease,background-color .06s ease,box-shadow .06s ease;
+  }
+  .start:active{transform:translateY(1px);background:var(--btn-press)}
+  .start:focus-visible{outline:none;box-shadow:0 0 0 4px color-mix(in srgb,var(--ring) 35%,transparent)}
+
+  /* —— App —— */
+  #app{display:none}
+  .topbar{display:flex;justify-content:flex-end}
   .btn{
     appearance:none; border:1px solid var(--border); background:#1a1d25; color:var(--fg);
     padding:8px 12px; border-radius:10px; font-size:14px; cursor:pointer; text-decoration:none;
   }
-  .btn.primary{ background:var(--btn); border-color:transparent }
-  .btn.primary:active{ background:var(--btn-press) }
-  .btn:focus-visible{ outline:none; box-shadow:0 0 0 3px color-mix(in srgb,var(--ring) 32%,transparent) }
+  .btn:focus-visible{outline:none; box-shadow:0 0 0 3px color-mix(in srgb,var(--ring) 32%,transparent)}
 
   /* 表格卡片 */
   .card{ background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden }
-  .thead, .trow{ display:grid; grid-template-columns: 1fr 96px; align-items:center }
-  .thead{ padding:10px 12px; border-bottom:1px solid var(--border); color:#cfd5df; font-size:13px }
+  .thead, .trow{ display:grid; grid-template-columns: 1fr 56px; align-items:center }
+  .thead{ padding:10px 12px; border-bottom:1px solid var(--border); color:#cfd5df; font-size:13px; gap:8px }
+  .head-edit{
+    min-height:36px; display:flex; align-items:center; padding:6px 8px; border-radius:8px;
+    outline:none; border:1px solid transparent; background:transparent; color:#e7e9ee;
+  }
+  .head-edit:focus{ border-color: color-mix(in srgb,var(--ring) 35%, transparent); }
+
+  .add{
+    width:40px;height:36px; border-radius:10px; border:1px solid var(--border);
+    display:grid; place-items:center; background:#1a1d25; color:#fff; cursor:pointer;
+    font-weight:700; font-size:18px; line-height:1;
+  }
+  .add:active{filter:brightness(.95)}
+  .add:focus-visible{outline:none; box-shadow:0 0 0 3px color-mix(in srgb,var(--ring) 32%,transparent)}
+
   .trow{ padding:8px 12px; border-top:1px solid var(--border) }
   .cell{ min-height:40px; display:flex; align-items:center; color:#fff; overflow:hidden }
   .cell input{
@@ -43,10 +65,8 @@
     border-radius:8px; outline:none;
   }
   .cell input::placeholder{ color:#717784 }
-  .row-actions{ display:flex; gap:6px; justify-content:flex-end }
-  .small{ padding:6px 10px; font-size:12px; border-radius:9px }
 
-  /* 扫码弹窗（沿用第一阶段逻辑） */
+  /* 扫码弹窗 */
   .modal{ position:fixed; inset:0; display:none; z-index:50; background:rgba(0,0,0,.55);
           padding:calc(env(safe-area-inset-top)+10px) 12px calc(env(safe-area-inset-bottom)+10px); }
   .modal.show{ display:flex; align-items:center; justify-content:center }
@@ -66,23 +86,27 @@
 </style>
 
 <body>
-  <main class="wrap">
-    <div class="toolbar">
-      <div class="title">Codes</div>
-      <div class="actions">
-        <button class="btn primary" id="addScan">＋ 扫描并添加</button>
+  <div class="wrap">
+    <!-- Landing -->
+    <section id="landing">
+      <button class="start" id="startBtn">START</button>
+    </section>
+
+    <!-- App -->
+    <section id="app">
+      <div class="topbar">
         <button class="btn" id="exportXlsx">导出 XLSX</button>
       </div>
-    </div>
 
-    <section class="card" id="tableCard">
-      <div class="thead">
-        <div>Code</div>
-        <div style="text-align:right">操作</div>
+      <div class="card">
+        <div class="thead">
+          <div id="colName" class="head-edit" contenteditable="true" spellcheck="false">Code</div>
+          <button class="add" id="addBtn" title="扫描并添加">＋</button>
+        </div>
+        <div id="tbody"></div>
       </div>
-      <div id="tbody"></div>
     </section>
-  </main>
+  </div>
 
   <!-- 扫码弹窗 -->
   <div class="modal" id="modal" aria-modal="true" role="dialog">
@@ -99,21 +123,35 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <script>
-    /************ 表格逻辑 ************/
+    /************ 视图切换 ************/
     const $=id=>document.getElementById(id);
+    const startBtn=$('startBtn');
+    const landing=$('landing');
+    const app=$('app');
+
+    startBtn.onclick=()=>{
+      landing.style.display='none';
+      app.style.display='block';
+      // 初始给 3 行空白（可改为 0）
+      if(!tbody.hasChildNodes()){
+        for(let i=0;i<3;i++) addRow('');
+      }
+    };
+
+    /************ 表格逻辑 ************/
     const tbody=$('tbody');
-    const addScanBtn=$('addScan');
+    const addBtn=$('addBtn');
     const exportBtn=$('exportXlsx');
+    const colNameEl=$('colName');
 
     function addRow(value=''){
       const row=document.createElement('div');
       row.className='trow';
       row.innerHTML=`
-        <div class="cell"><input type="text" placeholder="扫描结果将填入这里" value="${(value??'').toString().replace(/"/g,'&quot;')}"></div>
-        <div class="row-actions">
-          <button class="btn small" data-action="rescan">重扫</button>
-          <button class="btn small" data-action="del">删除</button>
+        <div class="cell">
+          <input type="text" placeholder="扫描结果将填入这里" value="${(value??'').toString().replace(/"/g,'&quot;')}">
         </div>
+        <div></div>
       `;
       tbody.appendChild(row);
       return row;
@@ -124,28 +162,13 @@
       return inputs.find(i => !i.value.trim());
     }
 
-    tbody.addEventListener('click', (e)=>{
-      const btn=e.target.closest('button');
-      if(!btn) return;
-      const row=btn.closest('.trow');
-      const input=row.querySelector('input');
-
-      if(btn.dataset.action==='del'){
-        row.remove();
-      }else if(btn.dataset.action==='rescan'){
-        targetInput=input;
-        openModalAndScan();
-      }
-    });
-
     exportBtn.onclick=()=>{
-      const data = [['Code']];
+      const header = (colNameEl.innerText || 'Code').trim();
+      const data = [[header]];
       tbody.querySelectorAll('input').forEach(i => data.push([i.value || '']));
       const ws = XLSX.utils.aoa_to_sheet(data);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-
-      // 带日期文件名
       const dt = new Date();
       const name = `codes-${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}.xlsx`;
       XLSX.writeFile(wb, name);
@@ -203,14 +226,12 @@
     }
 
     function onScanSuccess(val){
-      let input = targetInput || getFirstEmptyInput();
+      let input = getFirstEmptyInput();
       if(!input){
-        const row = addRow('');
-        input = row.querySelector('input');
+        input = addRow('').querySelector('input');
       }
       input.value = val;
 
-      targetInput=null;
       resBox.style.display='block';
       textBox.textContent=val;
       hint.textContent='Result copied to clipboard.';
@@ -220,22 +241,16 @@
       setTimeout(closeModal, 400);
     }
 
-    addScanBtn.onclick=()=>{
-      targetInput = getFirstEmptyInput();
-      if(!targetInput){
-        targetInput = addRow('').querySelector('input');
-      }
-      openModalAndScan();
-    };
+    // 表头“＋”按钮：只通过它来触发扫码
+    addBtn.onclick=()=>{ openModalAndScan(); };
 
+    // 关闭弹窗
     closeBtn.onclick=closeModal;
     modal.onclick=e=>{ if(e.target===modal) closeModal(); };
 
+    // 页面离开释放摄像头
     addEventListener('pagehide', stopScan);
     addEventListener('beforeunload', stopScan);
-
-    // 初始给 3 行空白（可改为 0）
-    for(let i=0;i<3;i++) addRow('');
   </script>
 </body>
 </html>
