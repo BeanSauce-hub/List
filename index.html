@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="en">
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Universal Scanner · Minimal</title>
+<html lang="zh-CN">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Scanner → XLSX (1-Column)</title>
 <style>
   :root{
-    --bg:#0e0f12; --fg:#e7e9ee; --muted:#9aa1ad; --border:rgba(255,255,255,.12);
+    --bg:#0e0f12; --fg:#e7e9ee; --muted:#9aa1ad; --card:#14161c; --border:rgba(255,255,255,.12);
     --btn:#e6372a; --btn-press:#c82f24; --ring:#2563eb;
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -13,165 +13,236 @@
   body{
     background:var(--bg); color:var(--fg);
     min-height:100svh;
-    padding:calc(env(safe-area-inset-top) + 6svh) 4vw calc(env(safe-area-inset-bottom) + 6svh);
-    display:flex; align-items:center; justify-content:center;
+    padding:calc(env(safe-area-inset-top)+3svh) 4vw calc(env(safe-area-inset-bottom)+3svh);
     font:16px/1.5 ui-sans-serif,system-ui,-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial;
     -webkit-font-smoothing:antialiased;
+    display:flex; align-items:flex-start; justify-content:center;
   }
+  .wrap{width:100%; max-width:720px; display:flex; flex-direction:column; gap:12px}
 
-  /* 扁平圆形红色按钮（放大1.5倍） */
-.launch{
-  width:180px;              /* 原120px → 放大1.5倍 */
-  height:180px;
-  border-radius:50%;
-  display:grid;
-  place-items:center;
-  cursor:pointer;
-  user-select:none;
-  background:var(--btn);
-  color:#fff;
-  font-weight:800;
-  font-size:24px;           /* 原18px → 稍微大一点 */
-  letter-spacing:.05em;
-  border:1px solid transparent;
-  transition:
-    transform .06s ease,
-    background-color .06s ease,
-    border-color .06s ease,
-    box-shadow .06s ease;
-}
-.launch:active{
-  transform:translateY(1px);
-  background:var(--btn-press);
-}
-.launch:focus-visible{
-  outline:none;
-  border-color:color-mix(in srgb,var(--ring) 70%,transparent);
-  box-shadow:0 0 0 4px color-mix(in srgb,var(--ring) 28%,transparent);
-}
+  /* 顶部工具栏 */
+  .toolbar{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+  }
+  .title{font-weight:700; font-size:18px}
+  .actions{display:flex; gap:8px; flex-wrap:wrap}
+  .btn{
+    appearance:none; border:1px solid var(--border); background:#1a1d25; color:var(--fg);
+    padding:8px 12px; border-radius:10px; font-size:14px; cursor:pointer; text-decoration:none;
+  }
+  .btn.primary{background:var(--btn); border-color:transparent}
+  .btn.primary:active{background:var(--btn-press)}
+  .btn:focus-visible{outline:none; box-shadow:0 0 0 3px color-mix(in srgb,var(--ring) 32%,transparent)}
 
+  /* 表格卡片 */
+  .card{background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden}
+  .thead, .trow{display:grid; grid-template-columns: 1fr 96px; align-items:center}
+  .thead{padding:10px 12px; border-bottom:1px solid var(--border); color:#cfd5df; font-size:13px}
+  .trow{padding:8px 12px; border-top:1px solid var(--border)}
+  .cell{min-height:40px; display:flex; align-items:center; color:#fff; overflow:hidden}
+  .cell input{
+    width:100%; background:transparent; border:none; color:#fff; font:inherit; padding:6px 8px;
+    border-radius:8px; outline:none;
+  }
+  .cell input::placeholder{color:#717784}
+  .row-actions{display:flex; gap:6px; justify-content:flex-end}
+  .small{padding:6px 10px; font-size:12px; border-radius:9px}
 
-  /* 弹窗（极简，无取景框 HUD） */
-  .modal{position:fixed;inset:0;display:none;z-index:50;background:rgba(0,0,0,.55);
+  /* 扫码弹窗（沿用第一阶段逻辑） */
+  .modal{position:fixed; inset:0; display:none; z-index:50; background:rgba(0,0,0,.55);
          padding:calc(env(safe-area-inset-top)+10px) 12px calc(env(safe-area-inset-bottom)+10px);}
-  .modal.show{display:flex;align-items:center;justify-content:center}
+  .modal.show{display:flex; align-items:center; justify-content:center}
   .sheet{
-    width:min(92vw,520px);max-height:min(82svh,82dvh);
-    background:#12131a;border:1px solid var(--border);border-radius:14px;
-    display:flex;flex-direction:column;overflow:hidden;
+    width:min(92vw,520px); max-height:min(82svh,82dvh);
+    background:#12131a; border:1px solid var(--border); border-radius:14px;
+    display:flex; flex-direction:column; overflow:hidden;
   }
-  .bar{display:flex;justify-content:flex-end;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}
-  .x{appearance:none;border:1px solid var(--border);background:#161821;color:var(--fg);
-     border-radius:10px;padding:6px 10px;font-size:13px;cursor:pointer}
-  .stage{position:relative;background:#000;height:clamp(240px,54svh,520px)}
-  video{width:100%;height:100%;object-fit:cover}
-
-  .res{padding:10px 12px;border-top:1px solid var(--border);display:none;color:#cfd5df}
-  .res pre{margin-top:6px;white-space:pre-wrap;word-break:break-word;font-size:13px;max-height:22svh;overflow:auto}
-  .actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
-  .btn{border:1px solid var(--border);background:#161821;color:var(--fg);border-radius:10px;padding:6px 12px;font-size:13px;text-decoration:none}
-  .btn.primary{background:#2563eb;border-color:transparent}
-  .hint{padding:8px 12px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+  .bar{display:flex; justify-content:flex-end; gap:8px; align-items:center; padding:10px 12px; border-bottom:1px solid var(--border)}
+  .x{appearance:none; border:1px solid var(--border); background:#161821; color:#e7e9ee;
+     border-radius:10px; padding:6px 10px; font-size:13px; cursor:pointer}
+  .stage{position:relative; background:#000; height:clamp(240px,54svh,520px)}
+  video{width:100%; height:100%; object-fit:cover}
+  .res{padding:10px 12px; border-top:1px solid var(--border); display:none; color:#cfd5df}
+  .res pre{margin-top:6px; white-space:pre-wrap; word-break:break-word; font-size:13px; max-height:22svh; overflow:auto}
+  .hint{padding:8px 12px; border-top:1px solid var(--border); color:#9aa1ad; font-size:12.5px; text-align:center}
 </style>
 
 <body>
-  <!-- 主界面只有一个圆形按钮 -->
-  <button class="launch" id="launch">SCAN</button>
+  <main class="wrap">
+    <div class="toolbar">
+      <div class="title">Codes</div>
+      <div class="actions">
+        <button class="btn primary" id="addScan">＋ 扫描并添加</button>
+        <button class="btn" id="exportXlsx">导出 XLSX</button>
+      </div>
+    </div>
 
-  <!-- 扫码弹窗（自动开始，支持条形码+二维码） -->
+    <section class="card" id="tableCard">
+      <div class="thead">
+        <div>Code</div>
+        <div style="text-align:right">操作</div>
+      </div>
+      <div id="tbody"></div>
+    </section>
+  </main>
+
+  <!-- 扫码弹窗 -->
   <div class="modal" id="modal" aria-modal="true" role="dialog">
     <div class="sheet">
       <div class="bar"><button class="x" id="close">Close</button></div>
-      <div class="stage">
-        <video id="video" playsinline muted></video>
-      </div>
-      <div class="res" id="res">
-        <pre id="text"></pre>
-        <div class="actions">
-          <button class="btn" id="copy">Copy</button>
-          <a class="btn primary" id="open" target="_blank" rel="noreferrer" style="display:none">Open Link</a>
-          <button class="btn" id="again">Scan Again</button>
-        </div>
-      </div>
+      <div class="stage"><video id="video" playsinline muted></video></div>
+      <div class="res" id="res"><pre id="text"></pre></div>
       <div class="hint" id="hint">Allow camera access to start scanning.</div>
     </div>
   </div>
 
-  <!-- ZXing：多码制识别（QR + 一维码） -->
+  <!-- 库：ZXing（扫码）+ SheetJS（导出） -->
   <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
   <script>
+    // ====== 表格逻辑 ======
     const $=id=>document.getElementById(id);
-    const launch=$('launch'), modal=$('modal'), closeBtn=$('close');
-    const video=$('video'), hint=$('hint'), res=$('res'), text=$('text');
-    const copyBtn=$('copy'), again=$('again'), openLink=$('open');
+    const tbody=$('tbody');
+    const addScanBtn=$('addScan');
+    const exportBtn=$('exportXlsx');
 
-    let codeReader=null, running=false;
+    // 新增一行（可选：预填 value）
+    function addRow(value=''){
+      const row=document.createElement('div');
+      row.className='trow';
+      row.innerHTML=`
+        <div class="cell"><input type="text" placeholder="扫描结果将填入这里" value="${value.replace?.(/"/g,'&quot;') || ''}"></div>
+        <div class="row-actions">
+          <button class="btn small" data-action="rescan">重扫</button>
+          <button class="btn small" data-action="del">删除</button>
+        </div>
+      `;
+      tbody.appendChild(row);
+      return row;
+    }
 
-    const openModal=()=>{ modal.classList.add('show'); start(); };
-    const closeModal=()=>{ stop(); modal.classList.remove('show'); res.style.display='none'; text.textContent=''; openLink.style.display='none'; };
-    const showHint=m=>{ hint.textContent=m||''; };
+    // 找到“第一格空单元格”的 input
+    function getFirstEmptyInput(){
+      const inputs=[...tbody.querySelectorAll('input')];
+      return inputs.find(i => !i.value.trim());
+    }
 
-    // CHANGED: 删除设备枚举；直接强制后置摄像头
-    const constraints = { // 仅对后置摄像头
-      video: { facingMode: { exact: 'environment' } }
+    // 行内操作：重扫 / 删除
+    tbody.addEventListener('click', (e)=>{
+      const btn=e.target.closest('button');
+      if(!btn) return;
+      const row=btn.closest('.trow');
+      const input=row.querySelector('input');
+
+      if(btn.dataset.action==='del'){
+        row.remove();
+      }else if(btn.dataset.action==='rescan'){
+        targetInput=input;
+        openModalAndScan();
+      }
+    });
+
+    // 导出 XLSX（只导出一列）
+    exportBtn.onclick=()=>{
+      const data = [['Code']];
+      tbody.querySelectorAll('input').forEach(i => data.push([i.value || '']));
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+      XLSX.writeFile(wb, 'codes.xlsx');
     };
 
-    async function start(){
-      showHint('Starting camera…');
-      if(!codeReader){ codeReader = new ZXing.BrowserMultiFormatReader(); }
-      try{
-        running = true;
+    // ====== 扫码逻辑（延续第一阶段，不改识别方式） ======
+    const modal=$('modal'), closeBtn=$('close');
+    const video=$('video'), hint=$('hint'), resBox=$('res'), textBox=$('text');
 
-        // CHANGED: 使用 decodeFromConstraints，传入后置摄像头约束
+    let codeReader=null, running=false, targetInput=null;
+
+    const constraints = { video: { facingMode: { exact: 'environment' } } };
+
+    function openModalAndScan(){
+      modal.classList.add('show');
+      startScan();
+    }
+    function closeModal(){
+      stopScan();
+      modal.classList.remove('show');
+      resBox.style.display='none';
+      textBox.textContent='';
+    }
+
+    async function startScan(){
+      hint.textContent='Starting camera…';
+      if(!codeReader) codeReader=new ZXing.BrowserMultiFormatReader();
+      try{
+        running=true;
         await codeReader.decodeFromConstraints(
           constraints,
           video,
-          (result, err, controls) => {
+          (result, err, controls)=>{
             if(!running) return;
             if(result){
-              onResult(result.getText());
+              // 成功：填入目标 input（或新增行）
+              const value=result.getText() || '';
+              onScanSuccess(value);
               try{ controls?.stop(); }catch{}
-            } else if(err && !(err instanceof ZXing.NotFoundException)) {
+            }else if(err && !(err instanceof ZXing.NotFoundException)){
               console.warn(err);
             }
           }
         );
-
-        showHint('Back camera active. Point at a QR / Barcode.');
+        hint.textContent='Point at a QR / Barcode.';
       }catch(e){
         console.error(e);
-        showHint('Camera unavailable (need HTTPS or permission).');
+        hint.textContent='Camera unavailable (need HTTPS or permission).';
       }
     }
 
-    function stop(){
-      running = false;
+    function stopScan(){
+      running=false;
       try{ codeReader?.reset(); }catch{}
     }
 
-    function onResult(val){
-      stop();
-      res.style.display='block';
-      text.textContent = val || '';
-      const isURL = /^https?:\/\//i.test(val);
-      openLink.style.display = isURL ? 'inline-block' : 'none';
-      if(isURL) openLink.href = val;
+    function onScanSuccess(val){
+      // 优先写入 targetInput，否则写入第一空格；若都没有，则新增一行
+      let input = targetInput || getFirstEmptyInput();
+      if(!input){
+        const row = addRow('');
+        input = row.querySelector('input');
+      }
+      input.value = val;
+
+      // 清理状态 & 反馈
+      targetInput=null;
+      resBox.style.display='block';
+      textBox.textContent=val;
+      hint.textContent='Result copied to clipboard.';
       navigator.clipboard?.writeText(val).catch(()=>{});
-      showHint('Result copied to clipboard.');
+
+      // 自动关闭弹窗（可选：如需停留请注释掉下面两行）
+      setTimeout(closeModal, 400);
     }
 
-    // 交互
-    launch.onclick = openModal;
-    closeBtn.onclick = closeModal;
-    modal.onclick = e => { if(e.target === modal) closeModal(); };
-    again.onclick = () => { res.style.display='none'; start(); };
-    copyBtn.onclick = async () => {
-      try{ await navigator.clipboard.writeText(text.textContent.trim()); showHint('Copied.'); }catch{}
+    // 顶部“＋ 扫描并添加”按钮：默认把结果填入“第一个空格”，若没有就先加一行
+    addScanBtn.onclick=()=>{
+      targetInput = getFirstEmptyInput();
+      if(!targetInput){
+        targetInput = addRow('').querySelector('input');
+      }
+      openModalAndScan();
     };
 
-    addEventListener('pagehide', stop);
-    addEventListener('beforeunload', stop);
+    // 关闭弹窗
+    closeBtn.onclick=closeModal;
+    modal.onclick=e=>{ if(e.target===modal) closeModal(); };
+
+    // 页面离开时释放摄像头
+    addEventListener('pagehide', stopScan);
+    addEventListener('beforeunload', stopScan);
+
+    // 初始给 3 行空白，方便上手（可改为 0）
+    for(let i=0;i<3;i++) addRow('');
   </script>
 </body>
 </html>
-
