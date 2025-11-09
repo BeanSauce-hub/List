@@ -8,6 +8,7 @@
     --bg:#0e0f12; --fg:#e7e9ee; --muted:#9aa1ad; --card:#14161c; --border:rgba(255,255,255,.12);
     --btn:#e6372a; --btn-press:#c82f24; --ring:#0a84ff; --danger:#ff4d4f;
     --tap:44px;
+    --colw: 320px;           /* 每一列的固定宽度（可按需要改成 280~360） */
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
@@ -17,7 +18,7 @@
     font:16px/1.5 ui-sans-serif,system-ui,-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial;
     display:flex; align-items:flex-start; justify-content:center;
   }
-  .wrap{width:100%; max-width:960px; display:flex; flex-direction:column; gap:12px}
+  .wrap{width:100%; max-width:1000px; display:flex; flex-direction:column; gap:12px}
 
   /* Landing */
   #landing{width:100%; display:flex; align-items:center; justify-content:center;}
@@ -25,6 +26,7 @@
     width:180px;height:180px;border-radius:50%; display:grid;place-items:center;
     cursor:pointer; user-select:none; background:var(--btn); color:#fff;
     font-weight:800; font-size:24px; letter-spacing:.05em; border:none;
+    -webkit-tap-highlight-color:transparent;
   }
   .start:active{transform:translateY(1px);background:var(--btn-press)}
 
@@ -36,40 +38,46 @@
     padding:8px 12px; border-radius:10px; font-size:14px; cursor:pointer;
   }
 
-  /* 主卡片：表头是多列栅格，最后一格是“新增列”按钮位 */
   .card{ background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden }
-  .thead{
-    display:grid; gap:8px; align-items:center;
-    padding:10px 12px; border-bottom:1px solid var(--border);
+
+  /* —— 可横向滚动的表头/内容 —— */
+  .thead, .tbody{
+    display:flex; gap:8px; padding:10px 12px;
+    overflow-x:auto; overscroll-behavior-x: contain;
+    scrollbar-width:thin;
   }
+  .thead{ border-bottom:1px solid var(--border) }
+
+  /* 单个列块（表头 + 删除按钮 / 新增列按钮） */
   .head-cell{
-    display:flex; gap:8px; align-items:center;
+    min-width:var(--colw); max-width:var(--colw);
+    display:flex; align-items:center; gap:8px;
   }
   .head-edit{
     flex:1; min-height:36px; padding:6px 8px; border-radius:8px; outline:none;
     border:1px solid transparent; background:transparent; color:#e7e9ee;
   }
-  .head-edit:focus{ border-color: color-mix(in srgb,var(--ring) 35%, transparent); }
+  .head-edit:focus{ border-color: color-mix(in srgb,var(--ring) 35%, transparent) }
 
-  .add-col{
-    width:var(--tap); height:calc(var(--tap) - 6px); border-radius:10px; border:1px solid var(--border);
-    display:grid; place-items:center; background:#1a1d25; color:#fff; font-weight:800; font-size:18px;
+  .del-col, .add-col{
+    width:36px; height:36px; border-radius:10px; display:grid; place-items:center; cursor:pointer;
+    background:#1a1d25; border:1px solid var(--border);
   }
-  .add-col:active{filter:brightness(.95)}
+  .del-col svg{ width:18px; height:18px; stroke:var(--danger); }
+  .del-col path{ stroke-width:2; stroke-linecap:round; fill:none; }
+  .add-col{ font-weight:900; font-size:18px; color:#fff }
+  .add-col:active, .del-col:active{ filter:brightness(.95) }
 
-  /* 内容区：与列数相同的栅格，每列是自己的列表 */
-  .tbody{
-    display:grid; gap:8px; padding:10px 12px;
-  }
+  /* 每一列的内容块 */
   .col{
+    min-width:var(--colw); max-width:var(--colw);
     display:flex; flex-direction:column; gap:8px;
   }
 
   /* 数据行（单列内） */
   .trow{
     display:grid; grid-template-columns: 1fr var(--tap); gap:8px;
-    border:1px solid var(--border); border-radius:12px; padding:8px 10px;
-    background:#14161c;
+    border:1px solid var(--border); border-radius:12px; padding:8px 10px; background:#14161c;
   }
   .cell input{
     width:100%; background:transparent; border:none; color:#fff; font:inherit; padding:6px 6px;
@@ -104,16 +112,14 @@
       </div>
 
       <div class="card">
-        <!-- 表头：N 个可编辑标题 + 末尾新增列按钮位 -->
+        <!-- 表头/内容：横向滚动，列宽固定 -->
         <div class="thead" id="thead"></div>
-
-        <!-- 内容：N 列并排（手机端会自动换行，可横向滚动） -->
         <div class="tbody" id="tbody"></div>
       </div>
     </section>
   </div>
 
-  <!-- 扫码弹窗 -->
+  <!-- 扫码弹窗（极简） -->
   <div class="modal" id="modal" aria-modal="true" role="dialog" style="position:fixed;inset:0;display:none;background:rgba(0,0,0,.55);padding:10px 12px;z-index:50">
     <div class="sheet" style="width:min(92vw,520px);margin:auto;max-height:82svh;background:#12131a;border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;overflow:hidden">
       <div class="bar" style="display:flex;justify-content:flex-end;padding:10px 12px;border-bottom:1px solid var(--border)">
@@ -134,49 +140,85 @@
     const thead=$('thead'), tbody=$('tbody');
     const exportBtn=$('exportXlsx');
 
+    // 同步横向滚动（表头/内容一起动）
+    thead.addEventListener('scroll', ()=>{ tbody.scrollLeft = thead.scrollLeft; }, {passive:true});
+    tbody.addEventListener('scroll', ()=>{ thead.scrollLeft = tbody.scrollLeft; }, {passive:true});
+
     // ===== 数据模型：列数组 =====
-    const columns=[]; // { title, colEl, bodyEl }
+    const columns=[]; // { titleEl, headCell, colBody }
 
     startBtn.onclick=()=>{
       landing.style.display='none';
       app.style.display='block';
       if(columns.length===0) addColumn('Code'); // 初始一列
-      layoutGrid();
+      layoutWidths();
     };
 
-    // —— 新增列（只在最右列显示按钮）——
+    function iconDelete(){
+      const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.setAttribute('viewBox','0 0 24 24');
+      const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+      p.setAttribute('d','M6 6l12 12M18 6L6 18');
+      p.setAttribute('stroke','#ff4d4f'); p.setAttribute('stroke-width','2'); p.setAttribute('stroke-linecap','round'); p.setAttribute('fill','none');
+      svg.appendChild(p);
+      return svg;
+    }
+
+    // —— 新增列（只在最右列显示“新增列”按钮）——
     function addColumn(title='Column'){
-      // 1) header cell
-      const headCell=document.createElement('div');
+      // header
+      const headCell = document.createElement('div');
       headCell.className='head-cell';
-      const titleEl=document.createElement('div');
+
+      const titleEl = document.createElement('div');
       titleEl.className='head-edit';
       titleEl.contentEditable='true';
       titleEl.spellcheck=false;
       titleEl.textContent=title;
+
+      const delBtn = document.createElement('button');
+      delBtn.className='del-col';
+      delBtn.title='删除该列';
+      delBtn.appendChild(iconDelete());
+      delBtn.onclick = () => deleteColumn(headCell);
+
       headCell.appendChild(titleEl);
+      headCell.appendChild(delBtn);
       thead.appendChild(headCell);
 
-      // 2) body column
+      // body
       const colBody=document.createElement('div');
       colBody.className='col';
       tbody.appendChild(colBody);
 
-      // 3) 预留 cell
+      // 预留 cell
       appendPlaceholder(colBody);
 
-      // 4) push model
+      // model
       columns.push({ titleEl, headCell, colBody });
 
-      // 5) 只给“最后一列”头部显示 +列按钮
       refreshAddColButton();
-      layoutGrid();
+      layoutWidths();
+    }
+
+    function deleteColumn(headCellEl){
+      const idx = columns.findIndex(c => c.headCell === headCellEl);
+      if(idx < 0) return;
+      const hasData = columns[idx].colBody.querySelector('.trow');
+      if(hasData && !confirm('该列包含数据，确定要删除吗？')) return;
+
+      // 移除 DOM & 模型
+      columns[idx].headCell.remove();
+      columns[idx].colBody.remove();
+      columns.splice(idx,1);
+
+      refreshAddColButton();
+      layoutWidths();
     }
 
     function refreshAddColButton(){
-      // 清掉所有 +列 按钮
+      // 先移除所有 add-col
       thead.querySelectorAll('.add-col').forEach(b=>b.remove());
-      // 在最后一个 headCell 里追加
       if(columns.length){
         const last = columns.at(-1).headCell;
         const btn = document.createElement('button');
@@ -188,14 +230,9 @@
       }
     }
 
-    // 根据列数设置栅格
-    function layoutGrid(){
-      const cols = Math.max(columns.length,1);
-      thead.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-      tbody.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-      // 若超出屏幕宽，允许横向滚动
-      tbody.style.overflowX = cols>=3 ? 'auto' : 'visible';
-      thead.style.overflowX = cols>=3 ? 'auto' : 'visible';
+    function layoutWidths(){
+      // 列宽由 CSS 变量控制，这里只负责让滚动条状态正确
+      thead.scrollLeft = tbody.scrollLeft;
     }
 
     // —— 列内：添加数据行 / 预留 cell —— //
@@ -212,8 +249,7 @@
     function makeDataRow(value=''){
       const row=document.createElement('div'); row.className='trow';
       const cell=document.createElement('div'); cell.className='cell';
-      const input=document.createElement('input');
-      input.value = value; input.placeholder='';
+      const input=document.createElement('input'); input.value=value;
       cell.appendChild(input);
       const clear=document.createElement('button'); clear.className='clear-btn'; clear.appendChild(clearIcon());
       clear.onclick=()=>{ input.value=''; input.focus(); };
@@ -224,34 +260,27 @@
     function appendPlaceholder(colBody){
       const ph=document.createElement('div'); ph.className='placeholder';
       const btn=document.createElement('button'); btn.className='plus-full'; btn.textContent='＋ 扫描并添加';
-      ph.appendChild(btn);
-      colBody.appendChild(ph);
-      // 点击该预留，记录目标列，弹出扫描
+      ph.appendChild(btn); colBody.appendChild(ph);
       btn.onclick=()=>{ targetCol = colBody; openModalAndScan(); };
       return ph;
     }
 
     function addValueToColumn(colBody, val){
-      // 找到最后一个元素（应该是 placeholder）
-      const last = colBody.lastElementChild;
-      // 在 placeholder 前插入数据行
+      const last = colBody.lastElementChild;           // placeholder
       const row = makeDataRow(val);
       colBody.insertBefore(row, last);
-      // 滚动可见
       row.scrollIntoView({behavior:'smooth',block:'center'});
     }
 
     // —— 导出 —— //
     exportBtn.onclick=()=>{
       const headers = columns.map(c => (c.titleEl.innerText || '').trim() || 'Column');
-      // 取最大行数
       const maxRows = Math.max(0, ...columns.map(c => c.colBody.querySelectorAll('.trow').length));
       const data = [headers];
       for(let r=0; r<maxRows; r++){
         const row = columns.map(c=>{
           const trows = c.colBody.querySelectorAll('.trow');
-          const val = trows[r]?.querySelector('input')?.value || '';
-          return val;
+          return trows[r]?.querySelector('input')?.value || '';
         });
         data.push(row);
       }
