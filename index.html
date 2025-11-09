@@ -8,28 +8,54 @@
     --bg:#0e0f12; --fg:#e7e9ee; --muted:#9aa1ad; --card:#14161c; --border:rgba(255,255,255,.12);
     --btn:#e6372a; --btn-press:#c82f24; --ring:#0a84ff; --danger:#ff4d4f;
     --tap:44px;
-    --colw: 320px;  /* 每一列宽度，可调 */
+    --colw: 320px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{
     background:var(--bg); color:var(--fg);
-    min-height:100svh; padding:calc(env(safe-area-inset-top)+3svh) 4vw calc(env(safe-area-inset-bottom)+3svh);
+    min-height:100svh;
     font:16px/1.5 ui-sans-serif,system-ui,-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial;
-    display:flex; align-items:flex-start; justify-content:center;
+    display:flex; align-items:center; justify-content:center;
   }
+
   .wrap{width:100%; max-width:1000px; display:flex; flex-direction:column; gap:12px}
 
-  /* Landing */
-  #landing{width:100%; display:flex; align-items:center; justify-content:center;}
-  .start{
-    width:180px;height:180px;border-radius:50%; display:grid;place-items:center;
-    cursor:pointer; background:var(--btn); color:#fff;
-    font-weight:800; font-size:24px; border:none; letter-spacing:.05em;
+  /* 让 landing 区域全屏垂直居中 */
+  #landing{
+    position:fixed;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--bg);
+    z-index:10;
   }
-  .start:active{transform:translateY(1px);background:var(--btn-press)}
 
-  /* App */
+  /* START 按钮更大更醒目 */
+  .start{
+    width:240px;
+    height:240px;
+    border-radius:50%;
+    display:grid;
+    place-items:center;
+    cursor:pointer;
+    user-select:none;
+    background:var(--btn);
+    color:#fff;
+    font-weight:900;
+    font-size:32px;
+    letter-spacing:.05em;
+    border:none;
+    box-shadow:0 0 40px rgba(230,55,42,0.25);
+    transition:transform .06s ease, background-color .06s ease;
+  }
+  .start:active{
+    transform:scale(0.98);
+    background:var(--btn-press);
+  }
+
+  /* 主 app */
   #app{display:none}
   .topbar{display:flex;justify-content:flex-end}
   .btn{
@@ -83,8 +109,10 @@
 
 <body>
 <div class="wrap">
+  <!-- 全屏居中的 START -->
   <section id="landing"><button class="start" id="startBtn">START</button></section>
 
+  <!-- 主应用 -->
   <section id="app">
     <div class="topbar"><button class="btn" id="exportXlsx">导出 XLSX</button></div>
     <div class="card">
@@ -163,8 +191,7 @@ function makeDataRow(value=''){
   const cell=document.createElement('div');cell.className='cell';
   const input=document.createElement('input');input.value=value;cell.appendChild(input);
   const del=document.createElement('button');del.className='clear-btn';del.appendChild(iconDelete());
-  // ✅ 改动：点击删除整行
-  del.onclick=()=>row.remove();
+  del.onclick=()=>row.remove(); // 删除整行
   row.appendChild(cell);row.appendChild(del);
   return row;
 }
@@ -207,7 +234,6 @@ const constraints={video:{facingMode:{exact:'environment'}}};
 
 function openModalAndScan(){modal.style.display='flex';startScan();}
 function closeModal(){stopScan();modal.style.display='none';}
-
 async function startScan(){
   hint.textContent='Starting camera…';
   if(!codeReader)codeReader=new ZXing.BrowserMultiFormatReader();
@@ -216,9 +242,7 @@ async function startScan(){
     await codeReader.decodeFromConstraints(constraints,video,(result,err,controls)=>{
       if(!running)return;
       if(result){
-        const val=result.getText()||'';
-        onScanSuccess(val);
-        try{controls?.stop();}catch{}
+        const val=result.getText()||'';onScanSuccess(val);try{controls?.stop();}catch{}
       }
     });
     hint.textContent='Point at a QR / Barcode.';
