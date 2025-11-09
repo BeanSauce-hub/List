@@ -8,7 +8,7 @@
     --bg:#0e0f12; --fg:#e7e9ee; --muted:#9aa1ad; --card:#14161c; --border:rgba(255,255,255,.12);
     --btn:#e6372a; --btn-press:#c82f24; --ring:#0a84ff; --danger:#ff4d4f;
     --tap:44px;
-    --colw: 320px;           /* 每一列的固定宽度（可按需要改成 280~360） */
+    --colw: 320px;  /* 每一列宽度，可调 */
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
@@ -24,9 +24,8 @@
   #landing{width:100%; display:flex; align-items:center; justify-content:center;}
   .start{
     width:180px;height:180px;border-radius:50%; display:grid;place-items:center;
-    cursor:pointer; user-select:none; background:var(--btn); color:#fff;
-    font-weight:800; font-size:24px; letter-spacing:.05em; border:none;
-    -webkit-tap-highlight-color:transparent;
+    cursor:pointer; background:var(--btn); color:#fff;
+    font-weight:800; font-size:24px; border:none; letter-spacing:.05em;
   }
   .start:active{transform:translateY(1px);background:var(--btn-press)}
 
@@ -40,303 +39,199 @@
 
   .card{ background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden }
 
-  /* —— 可横向滚动的表头/内容 —— */
   .thead, .tbody{
     display:flex; gap:8px; padding:10px 12px;
-    overflow-x:auto; overscroll-behavior-x: contain;
-    scrollbar-width:thin;
+    overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:thin;
   }
   .thead{ border-bottom:1px solid var(--border) }
 
-  /* 单个列块（表头 + 删除按钮 / 新增列按钮） */
-  .head-cell{
-    min-width:var(--colw); max-width:var(--colw);
-    display:flex; align-items:center; gap:8px;
-  }
-  .head-edit{
-    flex:1; min-height:36px; padding:6px 8px; border-radius:8px; outline:none;
-    border:1px solid transparent; background:transparent; color:#e7e9ee;
-  }
-  .head-edit:focus{ border-color: color-mix(in srgb,var(--ring) 35%, transparent) }
+  .head-cell{min-width:var(--colw);max-width:var(--colw);display:flex;align-items:center;gap:8px}
+  .head-edit{flex:1;min-height:36px;padding:6px 8px;border-radius:8px;outline:none;border:1px solid transparent;background:transparent;color:#e7e9ee}
+  .head-edit:focus{border-color: color-mix(in srgb,var(--ring) 35%, transparent)}
 
-  .del-col, .add-col{
-    width:36px; height:36px; border-radius:10px; display:grid; place-items:center; cursor:pointer;
-    background:#1a1d25; border:1px solid var(--border);
+  .del-col,.add-col{
+    width:36px;height:36px;border-radius:10px;display:grid;place-items:center;cursor:pointer;
+    background:#1a1d25;border:1px solid var(--border)
   }
-  .del-col svg{ width:18px; height:18px; stroke:var(--danger); }
-  .del-col path{ stroke-width:2; stroke-linecap:round; fill:none; }
-  .add-col{ font-weight:900; font-size:18px; color:#fff }
-  .add-col:active, .del-col:active{ filter:brightness(.95) }
+  .del-col svg{width:18px;height:18px;stroke:var(--danger)}
+  .del-col path{stroke-width:2;stroke-linecap:round;fill:none}
+  .add-col{font-weight:900;font-size:18px;color:#fff}
+  .add-col:active,.del-col:active{filter:brightness(.95)}
 
-  /* 每一列的内容块 */
-  .col{
-    min-width:var(--colw); max-width:var(--colw);
-    display:flex; flex-direction:column; gap:8px;
-  }
+  .col{min-width:var(--colw);max-width:var(--colw);display:flex;flex-direction:column;gap:8px}
 
-  /* 数据行（单列内） */
   .trow{
-    display:grid; grid-template-columns: 1fr var(--tap); gap:8px;
-    border:1px solid var(--border); border-radius:12px; padding:8px 10px; background:#14161c;
+    display:grid;grid-template-columns:1fr var(--tap);gap:8px;
+    border:1px solid var(--border);border-radius:12px;padding:8px 10px;background:#14161c;
   }
   .cell input{
-    width:100%; background:transparent; border:none; color:#fff; font:inherit; padding:6px 6px;
-    border-radius:8px; outline:none;
+    width:100%;background:transparent;border:none;color:#fff;font:inherit;padding:6px 6px;border-radius:8px;outline:none;
   }
   .clear-btn{
-    width:var(--tap); height:var(--tap); border-radius:12px; border:1.5px solid var(--danger);
-    background:transparent; display:grid; place-items:center; cursor:pointer;
+    width:var(--tap);height:var(--tap);border-radius:12px;border:1.5px solid var(--danger);
+    background:transparent;display:grid;place-items:center;cursor:pointer;
   }
-  .clear-btn svg{ width:22px; height:22px; stroke:var(--danger); }
-  .clear-btn path{ stroke-width:2; stroke-linecap:round; fill:none; }
+  .clear-btn svg{width:22px;height:22px;stroke:var(--danger)}
+  .clear-btn path{stroke-width:2;stroke-linecap:round;fill:none}
 
-  /* 预留 cell（占满整列宽度） */
   .placeholder .plus-full{
-    width:100%; height:var(--tap); border-radius:10px; border:1px dashed #3a3f4b;
-    background:#1a1d25; color:#fff; display:grid; place-items:center;
-    font-weight:800; font-size:18px;
+    width:100%;height:var(--tap);border-radius:10px;border:1px dashed #3a3f4b;
+    background:#1a1d25;color:#fff;display:grid;place-items:center;
+    font-weight:800;font-size:18px;
   }
 </style>
 
 <body>
-  <div class="wrap">
-    <!-- Landing -->
-    <section id="landing">
-      <button class="start" id="startBtn">START</button>
-    </section>
+<div class="wrap">
+  <section id="landing"><button class="start" id="startBtn">START</button></section>
 
-    <!-- App -->
-    <section id="app">
-      <div class="topbar">
-        <button class="btn" id="exportXlsx">导出 XLSX</button>
-      </div>
-
-      <div class="card">
-        <!-- 表头/内容：横向滚动，列宽固定 -->
-        <div class="thead" id="thead"></div>
-        <div class="tbody" id="tbody"></div>
-      </div>
-    </section>
-  </div>
-
-  <!-- 扫码弹窗（极简） -->
-  <div class="modal" id="modal" aria-modal="true" role="dialog" style="position:fixed;inset:0;display:none;background:rgba(0,0,0,.55);padding:10px 12px;z-index:50">
-    <div class="sheet" style="width:min(92vw,520px);margin:auto;max-height:82svh;background:#12131a;border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;overflow:hidden">
-      <div class="bar" style="display:flex;justify-content:flex-end;padding:10px 12px;border-bottom:1px solid var(--border)">
-        <button class="btn" id="close">Close</button>
-      </div>
-      <div class="stage" style="background:#000;height:54svh"><video id="video" playsinline muted style="width:100%;height:100%;object-fit:cover"></video></div>
-      <div class="hint" id="hint" style="padding:8px 12px;border-top:1px solid var(--border);color:#9aa1ad;font-size:12.5px;text-align:center">Allow camera access to start scanning.</div>
+  <section id="app">
+    <div class="topbar"><button class="btn" id="exportXlsx">导出 XLSX</button></div>
+    <div class="card">
+      <div class="thead" id="thead"></div>
+      <div class="tbody" id="tbody"></div>
     </div>
+  </section>
+</div>
+
+<!-- 扫码弹窗 -->
+<div class="modal" id="modal" style="position:fixed;inset:0;display:none;background:rgba(0,0,0,.55);padding:10px 12px;z-index:50">
+  <div class="sheet" style="width:min(92vw,520px);margin:auto;max-height:82svh;background:#12131a;border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;overflow:hidden">
+    <div class="bar" style="display:flex;justify-content:flex-end;padding:10px 12px;border-bottom:1px solid var(--border)">
+      <button class="btn" id="close">Close</button>
+    </div>
+    <div class="stage" style="background:#000;height:54svh">
+      <video id="video" playsinline muted style="width:100%;height:100%;object-fit:cover"></video>
+    </div>
+    <div class="hint" id="hint" style="padding:8px 12px;border-top:1px solid var(--border);color:#9aa1ad;font-size:12.5px;text-align:center">Allow camera access to start scanning.</div>
   </div>
+</div>
 
-  <!-- 库 -->
-  <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const startBtn=$('startBtn'),landing=$('landing'),app=$('app');
+const thead=$('thead'),tbody=$('tbody'),exportBtn=$('exportXlsx');
+const columns=[];
 
-  <script>
-    const $=id=>document.getElementById(id);
-    const startBtn=$('startBtn'), landing=$('landing'), app=$('app');
-    const thead=$('thead'), tbody=$('tbody');
-    const exportBtn=$('exportXlsx');
+startBtn.onclick=()=>{landing.style.display='none';app.style.display='block';if(columns.length===0)addColumn('Code');};
 
-    // 同步横向滚动（表头/内容一起动）
-    thead.addEventListener('scroll', ()=>{ tbody.scrollLeft = thead.scrollLeft; }, {passive:true});
-    tbody.addEventListener('scroll', ()=>{ thead.scrollLeft = tbody.scrollLeft; }, {passive:true});
+function iconDelete(){
+  const s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('viewBox','0 0 24 24');
+  const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+  p.setAttribute('d','M6 6l12 12M18 6L6 18');p.setAttribute('stroke','#ff4d4f');p.setAttribute('stroke-width','2');p.setAttribute('stroke-linecap','round');p.setAttribute('fill','none');
+  s.appendChild(p);return s;
+}
 
-    // ===== 数据模型：列数组 =====
-    const columns=[]; // { titleEl, headCell, colBody }
+function addColumn(title='Column'){
+  const head=document.createElement('div');head.className='head-cell';
+  const t=document.createElement('div');t.className='head-edit';t.contentEditable='true';t.textContent=title;
+  const del=document.createElement('button');del.className='del-col';del.appendChild(iconDelete());
+  del.onclick=()=>deleteColumn(head);
+  head.appendChild(t);head.appendChild(del);
+  thead.appendChild(head);
 
-    startBtn.onclick=()=>{
-      landing.style.display='none';
-      app.style.display='block';
-      if(columns.length===0) addColumn('Code'); // 初始一列
-      layoutWidths();
-    };
+  const col=document.createElement('div');col.className='col';tbody.appendChild(col);
+  appendPlaceholder(col);
+  columns.push({titleEl:t,headCell:head,colBody:col});
+  refreshAddColBtn();
+}
 
-    function iconDelete(){
-      const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
-      svg.setAttribute('viewBox','0 0 24 24');
-      const p=document.createElementNS('http://www.w3.org/2000/svg','path');
-      p.setAttribute('d','M6 6l12 12M18 6L6 18');
-      p.setAttribute('stroke','#ff4d4f'); p.setAttribute('stroke-width','2'); p.setAttribute('stroke-linecap','round'); p.setAttribute('fill','none');
-      svg.appendChild(p);
-      return svg;
-    }
+function deleteColumn(h){
+  const idx=columns.findIndex(c=>c.headCell===h);
+  if(idx<0)return;
+  const hasData=columns[idx].colBody.querySelector('.trow');
+  if(hasData&&!confirm('该列包含数据，确定删除？'))return;
+  columns[idx].headCell.remove();columns[idx].colBody.remove();columns.splice(idx,1);
+  refreshAddColBtn();
+}
 
-    // —— 新增列（只在最右列显示“新增列”按钮）——
-    function addColumn(title='Column'){
-      // header
-      const headCell = document.createElement('div');
-      headCell.className='head-cell';
+function refreshAddColBtn(){
+  thead.querySelectorAll('.add-col').forEach(b=>b.remove());
+  if(columns.length){
+    const last=columns.at(-1).headCell;
+    const add=document.createElement('button');
+    add.className='add-col';add.textContent='＋';add.title='新增一列';
+    add.onclick=()=>addColumn(`Col ${columns.length+1}`);
+    last.appendChild(add);
+  }
+}
 
-      const titleEl = document.createElement('div');
-      titleEl.className='head-edit';
-      titleEl.contentEditable='true';
-      titleEl.spellcheck=false;
-      titleEl.textContent=title;
+function makeDataRow(value=''){
+  const row=document.createElement('div');row.className='trow';
+  const cell=document.createElement('div');cell.className='cell';
+  const input=document.createElement('input');input.value=value;cell.appendChild(input);
+  const del=document.createElement('button');del.className='clear-btn';del.appendChild(iconDelete());
+  // ✅ 改动：点击删除整行
+  del.onclick=()=>row.remove();
+  row.appendChild(cell);row.appendChild(del);
+  return row;
+}
 
-      const delBtn = document.createElement('button');
-      delBtn.className='del-col';
-      delBtn.title='删除该列';
-      delBtn.appendChild(iconDelete());
-      delBtn.onclick = () => deleteColumn(headCell);
+function appendPlaceholder(col){
+  const ph=document.createElement('div');ph.className='placeholder';
+  const b=document.createElement('button');b.className='plus-full';b.textContent='＋ 扫描并添加';
+  ph.appendChild(b);col.appendChild(ph);
+  b.onclick=()=>{targetCol=col;openModalAndScan();};
+}
 
-      headCell.appendChild(titleEl);
-      headCell.appendChild(delBtn);
-      thead.appendChild(headCell);
+function addValueToColumn(col,val){
+  const last=col.lastElementChild;
+  const row=makeDataRow(val);
+  col.insertBefore(row,last);
+  row.scrollIntoView({behavior:'smooth',block:'center'});
+}
 
-      // body
-      const colBody=document.createElement('div');
-      colBody.className='col';
-      tbody.appendChild(colBody);
+exportBtn.onclick=()=>{
+  const headers=columns.map(c=>(c.titleEl.innerText||'').trim()||'Column');
+  const maxRows=Math.max(0,...columns.map(c=>c.colBody.querySelectorAll('.trow').length));
+  const data=[headers];
+  for(let r=0;r<maxRows;r++){
+    const row=columns.map(c=>{
+      const t=c.colBody.querySelectorAll('.trow');
+      return t[r]?.querySelector('input')?.value||'';
+    });
+    data.push(row);
+  }
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
+  const d=new Date();const name=`codes-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.xlsx`;
+  XLSX.writeFile(wb,name);
+};
 
-      // 预留 cell
-      appendPlaceholder(colBody);
+// ===== ZXing 扫码 =====
+const modal=$('modal'),closeBtn=$('close'),video=$('video'),hint=$('hint');
+let codeReader=null,running=false,targetCol=null;
+const constraints={video:{facingMode:{exact:'environment'}}};
 
-      // model
-      columns.push({ titleEl, headCell, colBody });
+function openModalAndScan(){modal.style.display='flex';startScan();}
+function closeModal(){stopScan();modal.style.display='none';}
 
-      refreshAddColButton();
-      layoutWidths();
-    }
-
-    function deleteColumn(headCellEl){
-      const idx = columns.findIndex(c => c.headCell === headCellEl);
-      if(idx < 0) return;
-      const hasData = columns[idx].colBody.querySelector('.trow');
-      if(hasData && !confirm('该列包含数据，确定要删除吗？')) return;
-
-      // 移除 DOM & 模型
-      columns[idx].headCell.remove();
-      columns[idx].colBody.remove();
-      columns.splice(idx,1);
-
-      refreshAddColButton();
-      layoutWidths();
-    }
-
-    function refreshAddColButton(){
-      // 先移除所有 add-col
-      thead.querySelectorAll('.add-col').forEach(b=>b.remove());
-      if(columns.length){
-        const last = columns.at(-1).headCell;
-        const btn = document.createElement('button');
-        btn.className='add-col';
-        btn.title='新增一列';
-        btn.textContent='＋';
-        btn.onclick=()=> addColumn(`Col ${columns.length+1}`);
-        last.appendChild(btn);
+async function startScan(){
+  hint.textContent='Starting camera…';
+  if(!codeReader)codeReader=new ZXing.BrowserMultiFormatReader();
+  try{
+    running=true;
+    await codeReader.decodeFromConstraints(constraints,video,(result,err,controls)=>{
+      if(!running)return;
+      if(result){
+        const val=result.getText()||'';
+        onScanSuccess(val);
+        try{controls?.stop();}catch{}
       }
-    }
-
-    function layoutWidths(){
-      // 列宽由 CSS 变量控制，这里只负责让滚动条状态正确
-      thead.scrollLeft = tbody.scrollLeft;
-    }
-
-    // —— 列内：添加数据行 / 预留 cell —— //
-    function clearIcon(){
-      const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
-      svg.setAttribute('viewBox','0 0 24 24');
-      const p = document.createElementNS('http://www.w3.org/2000/svg','path');
-      p.setAttribute('d','M6 6l12 12M18 6L6 18');
-      p.setAttribute('stroke','#ff4d4f'); p.setAttribute('stroke-width','2'); p.setAttribute('stroke-linecap','round'); p.setAttribute('fill','none');
-      svg.appendChild(p);
-      return svg;
-    }
-
-    function makeDataRow(value=''){
-      const row=document.createElement('div'); row.className='trow';
-      const cell=document.createElement('div'); cell.className='cell';
-      const input=document.createElement('input'); input.value=value;
-      cell.appendChild(input);
-      const clear=document.createElement('button'); clear.className='clear-btn'; clear.appendChild(clearIcon());
-      clear.onclick=()=>{ input.value=''; input.focus(); };
-      row.appendChild(cell); row.appendChild(clear);
-      return row;
-    }
-
-    function appendPlaceholder(colBody){
-      const ph=document.createElement('div'); ph.className='placeholder';
-      const btn=document.createElement('button'); btn.className='plus-full'; btn.textContent='＋ 扫描并添加';
-      ph.appendChild(btn); colBody.appendChild(ph);
-      btn.onclick=()=>{ targetCol = colBody; openModalAndScan(); };
-      return ph;
-    }
-
-    function addValueToColumn(colBody, val){
-      const last = colBody.lastElementChild;           // placeholder
-      const row = makeDataRow(val);
-      colBody.insertBefore(row, last);
-      row.scrollIntoView({behavior:'smooth',block:'center'});
-    }
-
-    // —— 导出 —— //
-    exportBtn.onclick=()=>{
-      const headers = columns.map(c => (c.titleEl.innerText || '').trim() || 'Column');
-      const maxRows = Math.max(0, ...columns.map(c => c.colBody.querySelectorAll('.trow').length));
-      const data = [headers];
-      for(let r=0; r<maxRows; r++){
-        const row = columns.map(c=>{
-          const trows = c.colBody.querySelectorAll('.trow');
-          return trows[r]?.querySelector('input')?.value || '';
-        });
-        data.push(row);
-      }
-      const ws = XLSX.utils.aoa_to_sheet(data);
-      const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-      const dt = new Date();
-      const name = `codes-${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}.xlsx`;
-      XLSX.writeFile(wb, name);
-    };
-
-    // ===== 扫码（后置摄像头，ZXing） =====
-    const modal=$('modal'), closeBtn=$('close'), video=$('video'), hint=$('hint');
-    let codeReader=null, running=false, targetCol=null;
-    const constraints = { video: { facingMode: { exact: 'environment' } } };
-
-    function openModalAndScan(){ modal.style.display='flex'; startScan(); }
-    function closeModal(){ stopScan(); modal.style.display='none'; }
-
-    async function startScan(){
-      hint.textContent='Starting camera…';
-      if(!codeReader) codeReader=new ZXing.BrowserMultiFormatReader();
-      try{
-        running=true;
-        await codeReader.decodeFromConstraints(
-          constraints, video,
-          (result, err, controls)=>{
-            if(!running) return;
-            if(result){
-              const val=result.getText() || '';
-              onScanSuccess(val);
-              try{ controls?.stop(); }catch{}
-            }else if(err && !(err instanceof ZXing.NotFoundException)){
-              console.warn(err);
-            }
-          }
-        );
-        hint.textContent='Point at a QR / Barcode.';
-      }catch(e){
-        console.error(e);
-        hint.textContent='Camera unavailable (need HTTPS or permission).';
-      }
-    }
-    function stopScan(){ running=false; try{ codeReader?.reset(); }catch{} }
-
-    function onScanSuccess(val){
-      const colBody = targetCol || columns[0]?.colBody;
-      if(colBody) addValueToColumn(colBody, val);
-      navigator.clipboard?.writeText(val).catch(()=>{});
-      setTimeout(closeModal, 300);
-      targetCol = null;
-    }
-
-    closeBtn.onclick=closeModal;
-    modal.onclick=e=>{ if(e.target===modal) closeModal(); };
-    addEventListener('pagehide', stopScan);
-    addEventListener('beforeunload', stopScan);
-  </script>
+    });
+    hint.textContent='Point at a QR / Barcode.';
+  }catch(e){hint.textContent='Camera unavailable (need HTTPS).';}
+}
+function stopScan(){running=false;try{codeReader?.reset();}catch{}}
+function onScanSuccess(v){
+  const col=targetCol||columns[0]?.colBody;
+  if(col)addValueToColumn(col,v);
+  navigator.clipboard?.writeText(v).catch(()=>{});
+  setTimeout(closeModal,300);targetCol=null;
+}
+closeBtn.onclick=closeModal;modal.onclick=e=>{if(e.target===modal)closeModal();};
+</script>
 </body>
 </html>
