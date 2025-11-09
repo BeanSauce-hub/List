@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Scanner → XLSX (Multi-Column)</title>
+<title>SmartScan</title>
 <style>
   :root{
     --bg:#0e0f12; --fg:#e7e9ee; --muted:#9aa1ad; --card:#14161c; --border:rgba(255,255,255,.12);
@@ -21,38 +21,38 @@
 
   .wrap{width:100%; max-width:1000px; display:flex; flex-direction:column; gap:12px}
 
-  /* 让 landing 区域全屏垂直居中 */
-  #landing{
-    position:fixed;
-    inset:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    background:var(--bg);
-    z-index:10;
+  /* START 页面全屏居中 */
+  #landing {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    z-index: 10;
   }
 
-  /* START 按钮更大更醒目 */
-  .start{
-    width:240px;
-    height:240px;
-    border-radius:50%;
-    display:grid;
-    place-items:center;
-    cursor:pointer;
-    user-select:none;
-    background:var(--btn);
-    color:#fff;
-    font-weight:900;
-    font-size:32px;
-    letter-spacing:.05em;
-    border:none;
-    box-shadow:0 0 40px rgba(230,55,42,0.25);
-    transition:transform .06s ease, background-color .06s ease;
+  /* 放大 + 居中 + 光晕效果 */
+  .start {
+    width: 240px;
+    height: 240px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    user-select: none;
+    background: var(--btn);
+    color: #fff;
+    font-weight: 900;
+    font-size: 32px;
+    letter-spacing: .05em;
+    border: none;
+    box-shadow: 0 0 40px rgba(230, 55, 42, 0.25);
+    transition: transform .06s ease, background-color .06s ease;
   }
-  .start:active{
-    transform:scale(0.98);
-    background:var(--btn-press);
+  .start:active {
+    transform: scale(0.98);
+    background: var(--btn-press);
   }
 
   /* 主 app */
@@ -109,7 +109,7 @@
 
 <body>
 <div class="wrap">
-  <!-- 全屏居中的 START -->
+  <!-- START 页面 -->
   <section id="landing"><button class="start" id="startBtn">START</button></section>
 
   <!-- 主应用 -->
