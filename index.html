@@ -5,10 +5,9 @@
 <title>Scanner → XLSX (One Column)</title>
 <style>
   :root{
-    /* 颜色与尺寸 */
     --bg:#0e0f12; --fg:#e7e9ee; --muted:#9aa1ad; --card:#14161c; --border:rgba(255,255,255,.12);
     --btn:#e6372a; --btn-press:#c82f24; --ring:#0a84ff; --danger:#ff4d4f;
-    --tap:40px; /* 移动端可点尺寸（最小 40px） */
+    --tap:44px; /* 触控友好尺寸 */
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
@@ -38,7 +37,7 @@
   #app{display:none}
   .topbar{display:flex;justify-content:flex-end}
   .btn{
-    appearance:none; border:1px solid var(--border); background:#1a1d25; color:var(--fg);
+    appearance:none; border:1px solid var(--border); background:#1a1d25; color:#e7e9ee;
     padding:8px 12px; border-radius:10px; font-size:14px; cursor:pointer; text-decoration:none;
     touch-action:manipulation;-webkit-tap-highlight-color:transparent;
   }
@@ -54,29 +53,22 @@
   }
   .head-edit:focus{ border-color: color-mix(in srgb,var(--ring) 35%, transparent); }
 
-  .add{
-    width:var(--tap); height:calc(var(--tap) - 4px); border-radius:10px; border:1px solid var(--border);
-    display:grid; place-items:center; background:#1a1d25; color:#fff; cursor:pointer;
-    font-weight:700; font-size:18px; line-height:1; touch-action:manipulation;
-  }
-  .add:active{filter:brightness(.95)}
-  .add:focus-visible{outline:none; box-shadow:0 0 0 3px color-mix(in srgb,var(--ring) 32%,transparent)}
-
+  /* 数据行：内容 + 清空 */
   .trow{
     padding:8px 12px; border-top:1px solid var(--border);
     display:grid; grid-template-columns: 1fr var(--tap); align-items:center; gap:8px;
   }
-  .cell{ min-height:40px; display:flex; align-items:center; overflow:hidden }
+  .cell{ min-height:44px; display:flex; align-items:center; overflow:hidden }
   .cell input{
-    width:100%; background:transparent; border:none; color:#fff; font:inherit; padding:6px 8px;
+    width:100%; background:transparent; border:none; color:#fff; font:inherit; padding:8px 10px;
     border-radius:8px; outline:none;
   }
   .cell input::placeholder{ color:#717784 }
 
-  /* 清空按钮：使用 SVG 图标（跨机型一致） */
+  /* 清空按钮 */
   .clear-btn{
     width:var(--tap); height:var(--tap); border-radius:12px;
-    border:1.5px solid var(--danger); background:transparent; color:var(--danger);
+    border:1.5px solid var(--danger); background:transparent;
     display:grid; place-items:center; cursor:pointer; touch-action:manipulation;
     -webkit-tap-highlight-color:transparent;
     transition:background-color .12s ease, transform .06s ease, box-shadow .12s ease;
@@ -85,6 +77,21 @@
   .clear-btn:active{ transform:translateY(1px); background:color-mix(in srgb,var(--danger) 18%, transparent); }
   .clear-btn:focus-visible{ outline:none; box-shadow:0 0 0 3px color-mix(in srgb,var(--danger) 35%, transparent); }
   .clear-btn svg{ width:22px; height:22px; stroke:var(--danger); }
+  .clear-btn path{ stroke-width:2; stroke-linecap:round; fill:none; }
+
+  /* 预留行（占满整格的 + 按钮） */
+  .placeholder{
+    padding:8px 12px; border-top:1px solid var(--border);
+  }
+  .plus-full{
+    width:100%; height:var(--tap);
+    border-radius:10px; border:1px dashed #3a3f4b;
+    background:#1a1d25; color:#fff; cursor:pointer; touch-action:manipulation;
+    display:grid; place-items:center; font-weight:800; font-size:18px; letter-spacing:.02em;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .plus-full:active{ filter:brightness(.95); }
+  .plus-full:focus-visible{ outline:none; box-shadow:0 0 0 3px color-mix(in srgb,var(--ring) 32%,transparent); }
 
   /* 扫码弹窗 */
   .modal{ position:fixed; inset:0; display:none; z-index:50; background:rgba(0,0,0,.55);
@@ -121,7 +128,8 @@
       <div class="card">
         <div class="thead">
           <div id="colName" class="head-edit" contenteditable="true" spellcheck="false" aria-label="编辑表头">Code</div>
-          <button class="add" id="addBtn" title="扫描并添加" aria-label="扫描并添加">＋</button>
+          <!-- 表头右侧不再触发扫描；改为每个预留单元格里的大 + 才触发 -->
+          <div></div>
         </div>
         <div id="tbody"></div>
       </div>
@@ -151,58 +159,69 @@
       landing.style.display='none';
       app.style.display='block';
       if(!tbody.hasChildNodes()){
-        for(let i=0;i<3;i++) addRow('');
+        addPlaceholderRow(); // 只有一个预留 cell
       }
     };
 
     /************ 表格逻辑 ************/
     const tbody=$('tbody');
-    const addBtn=$('addBtn');
     const exportBtn=$('exportXlsx');
     const colNameEl=$('colName');
 
-    function clearButtonSVG(){
-      // 内嵌 SVG 红色叉叉，跨机型一致
-      return `
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" role="img">
-          <path d="M6 6l12 12M18 6L6 18" fill="none" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      `;
+    function clearIconSVG(){
+      return `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" role="img">
+        <path d="M6 6l12 12M18 6L6 18"></path>
+      </svg>`;
     }
 
-    function addRow(value=''){
+    function addDataRow(value=''){
       const row=document.createElement('div');
       row.className='trow';
       row.innerHTML=`
         <div class="cell">
-          <input type="text" placeholder="扫描结果将填入这里"
-                 value="${(value??'').toString().replace(/"/g,'&quot;')}" aria-label="单元格内容">
+          <input type="text" value="${(value??'').toString().replace(/"/g,'&quot;')}" aria-label="单元格内容">
         </div>
         <button class="clear-btn" type="button" title="清空该行" aria-label="清空该行">
-          ${clearButtonSVG()}
+          ${clearIconSVG()}
         </button>
       `;
       tbody.appendChild(row);
       return row;
     }
 
-    // 清空：事件委托
+    function addPlaceholderRow(){
+      const row=document.createElement('div');
+      row.className='placeholder';
+      row.innerHTML=`
+        <button class="plus-full" type="button" aria-label="扫描并添加">＋ 扫描并添加</button>
+      `;
+      tbody.appendChild(row);
+      return row;
+    }
+
+    // 事件委托：清空 & 预留cell的“＋”
     tbody.addEventListener('click', e=>{
-      const btn=e.target.closest('.clear-btn');
-      if(btn){
-        const input=btn.parentElement.querySelector('input');
+      const btnClear = e.target.closest('.clear-btn');
+      if(btnClear){
+        const input=btnClear.parentElement.querySelector('input');
         if(input){ input.value=''; input.focus(); }
+        return;
+      }
+      const btnPlus = e.target.closest('.plus-full');
+      if(btnPlus){
+        // 记录当前点击的预留行
+        currentPlaceholder = btnPlus.closest('.placeholder');
+        openModalAndScan();
       }
     });
 
-    function getFirstEmptyInput(){
-      return [...tbody.querySelectorAll('input')].find(i => !i.value.trim());
+    function getAllValues(){
+      return [...tbody.querySelectorAll('.trow input')].map(i => [i.value || '']);
     }
 
     exportBtn.onclick=()=>{
       const header = (colNameEl.innerText || 'Code').trim();
-      const data = [[header]];
-      tbody.querySelectorAll('input').forEach(i => data.push([i.value || '']));
+      const data = [[header], ...getAllValues()];
       const ws = XLSX.utils.aoa_to_sheet(data);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
@@ -215,7 +234,7 @@
     const modal=$('modal'), closeBtn=$('close');
     const video=$('video'), hint=$('hint'), resBox=$('res'), textBox=$('text');
 
-    let codeReader=null, running=false;
+    let codeReader=null, running=false, currentPlaceholder=null;
 
     // 强制后置摄像头（若 exact 抛错，可改为 ideal）
     const constraints = { video: { facingMode: { exact: 'environment' } } };
@@ -263,29 +282,32 @@
     }
 
     function onScanSuccess(val){
-      let input = getFirstEmptyInput();
-      if(!input) input = addRow('').querySelector('input');
-      input.value = val;
+      // 用本次点击的预留行替换为数据行，并在末尾再补一个预留行
+      if(currentPlaceholder){
+        const newRow = addDataRow(val);
+        tbody.insertBefore(newRow, currentPlaceholder); // 在预留行之前插入数据
+        currentPlaceholder.remove();                    // 移除旧的预留行
+        addPlaceholderRow();                            // 末尾再补一个新的预留
+        currentPlaceholder=null;
+      }else{
+        // 兜底：没有预留标记就直接追加数据行并再补一个预留
+        addDataRow(val);
+        addPlaceholderRow();
+      }
 
       resBox.style.display='block';
       textBox.textContent=val;
       hint.textContent='Result copied to clipboard.';
       navigator.clipboard?.writeText(val).catch(()=>{});
 
-      // 自动关闭
+      // 自动关闭 & 滚动到最新
       setTimeout(closeModal, 400);
-      // 自动滚动到新值
-      input.scrollIntoView({ behavior:'smooth', block:'center' });
+      [...tbody.querySelectorAll('.trow input')].at(-1)?.scrollIntoView({behavior:'smooth', block:'center'});
     }
 
-    // 只通过表头「＋」触发扫码
-    addBtn.onclick=()=>{ openModalAndScan(); };
-
-    // 关闭弹窗
     closeBtn.onclick=closeModal;
     modal.onclick=e=>{ if(e.target===modal) closeModal(); };
 
-    // 页面离开释放摄像头
     addEventListener('pagehide', stopScan);
     addEventListener('beforeunload', stopScan);
   </script>
