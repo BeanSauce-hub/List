@@ -12,20 +12,17 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{
-    background:var(--bg); color:var(--fg);
-    min-height:100svh;
+    background:var(--bg); color:var(--fg); min-height:100svh;
     font:16px/1.5 ui-sans-serif,system-ui,-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial;
-    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
-    /* 不整体居中，让页面正常从上往下排 */
+    -webkit-font-smoothing:antialiased;
   }
   .wrap{width:100%; max-width:1000px; margin:0 auto; padding:18px 4vw; display:flex; flex-direction:column; gap:12px}
 
-  /* 仅让 START 区域水平居中，位置在页面靠中偏上 */
+  /* ✅ START 覆盖层：始终在屏幕正中央 */
   #landing{
-    width:100%;
-    display:flex;
-    justify-content:center;   /* 水平居中按钮 */
-    margin:10vh 0 4vh;        /* 位置可按需微调 */
+    position:fixed; inset:0; z-index:1000;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--bg); /* 保持与你的背景一致 */
   }
   .start{
     width:240px;height:240px;border-radius:50%;
@@ -36,79 +33,43 @@
   }
   .start:active{transform:scale(.98);background:var(--btn-press)}
 
-  /* App 区域 */
+  /* App */
   #app{display:none}
   .topbar{display:flex;justify-content:flex-end}
   .btn{
     appearance:none; border:1px solid var(--border); background:#1a1d25; color:#e7e9ee;
     padding:8px 12px; border-radius:10px; font-size:14px; cursor:pointer;
   }
-
   .card{ background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden }
 
-  /* 横向滚动的表头/内容（同步滚动） */
-  .thead, .tbody{
-    display:flex; gap:8px; padding:10px 12px;
-    overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:thin;
-  }
+  .thead,.tbody{ display:flex; gap:8px; padding:10px 12px; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:thin }
   .thead{ border-bottom:1px solid var(--border) }
 
-  /* 头部单列块 */
-  .head-cell{
-    min-width:var(--colw); max-width:var(--colw);
-    display:flex; align-items:center; gap:8px;
-  }
-  .head-edit{
-    flex:1; min-height:36px; padding:6px 8px; border-radius:8px; outline:none;
-    border:1px solid transparent; background:transparent; color:#e7e9ee;
-  }
+  .head-cell{ min-width:var(--colw); max-width:var(--colw); display:flex; align-items:center; gap:8px }
+  .head-edit{ flex:1; min-height:36px; padding:6px 8px; border-radius:8px; outline:none; border:1px solid transparent; background:transparent; color:#e7e9ee }
   .head-edit:focus{ border-color: color-mix(in srgb,var(--ring) 35%, transparent) }
 
-  .del-col,.add-col{
-    width:36px;height:36px;border-radius:10px;display:grid;place-items:center;cursor:pointer;
-    background:#1a1d25;border:1px solid var(--border)
-  }
-  .del-col svg{width:18px;height:18px;stroke:var(--danger)}
-  .del-col path{stroke-width:2;stroke-linecap:round;fill:none}
-  .add-col{font-weight:900;font-size:18px;color:#fff}
-  .add-col:active,.del-col:active{filter:brightness(.95)}
+  .del-col,.add-col{ width:36px;height:36px;border-radius:10px;display:grid;place-items:center;cursor:pointer;background:#1a1d25;border:1px solid var(--border) }
+  .del-col svg{width:18px;height:18px;stroke:var(--danger)} .del-col path{stroke-width:2;stroke-linecap:round;fill:none}
+  .add-col{font-weight:900;font-size:18px;color:#fff} .add-col:active,.del-col:active{filter:brightness(.95)}
 
-  /* 每列主体 */
-  .col{
-    min-width:var(--colw); max-width:var(--colw);
-    display:flex; flex-direction:column; gap:8px;
-  }
+  .col{ min-width:var(--colw); max-width:var(--colw); display:flex; flex-direction:column; gap:8px }
 
-  /* 数据行（单列内） */
-  .trow{
-    display:grid; grid-template-columns: 1fr var(--tap); gap:8px;
-    border:1px solid var(--border); border-radius:12px; padding:8px 10px; background:#14161c;
-  }
-  .cell input{
-    width:100%; background:transparent; border:none; color:#fff; font:inherit; padding:6px 6px;
-    border-radius:8px; outline:none;
-  }
-  .clear-btn{
-    width:var(--tap); height:var(--tap); border-radius:12px; border:1.5px solid var(--danger);
-    background:transparent; display:grid; place-items:center; cursor:pointer;
-  }
-  .clear-btn svg{ width:22px; height:22px; stroke:var(--danger) }
-  .clear-btn path{ stroke-width:2; stroke-linecap:round; fill:none }
+  .trow{ display:grid; grid-template-columns:1fr var(--tap); gap:8px; border:1px solid var(--border); border-radius:12px; padding:8px 10px; background:#14161c }
+  .cell input{ width:100%; background:transparent; border:none; color:#fff; font:inherit; padding:6px 6px; border-radius:8px; outline:none }
+  .clear-btn{ width:var(--tap); height:var(--tap); border-radius:12px; border:1.5px solid var(--danger); background:transparent; display:grid; place-items:center; cursor:pointer }
+  .clear-btn svg{ width:22px; height:22px; stroke:var(--danger) } .clear-btn path{ stroke-width:2; stroke-linecap:round; fill:none }
 
-  /* 预留 cell（整列宽） */
   .placeholder .plus-full{
     width:100%; height:var(--tap); border-radius:10px; border:1px dashed #3a3f4b;
-    background:#1a1d25; color:#fff; display:grid; place-items:center;
-    font-weight:800; font-size:18px;
+    background:#1a1d25; color:#fff; display:grid; place-items:center; font-weight:800; font-size:18px;
   }
 </style>
 
 <body>
   <div class="wrap">
-    <!-- 仅按钮居中 -->
-    <section id="landing">
-      <button class="start" id="startBtn">START</button>
-    </section>
+    <!-- 覆盖层：仅展示 START 按钮 -->
+    <section id="landing"><button class="start" id="startBtn">START</button></section>
 
     <!-- 主应用 -->
     <section id="app" aria-live="polite">
@@ -120,7 +81,7 @@
     </section>
   </div>
 
-  <!-- 扫码弹窗（极简） -->
+  <!-- 扫码弹窗 -->
   <div class="modal" id="modal" aria-modal="true" role="dialog" style="position:fixed;inset:0;display:none;background:rgba(0,0,0,.55);padding:10px 12px;z-index:50">
     <div class="sheet" style="width:min(92vw,520px);margin:auto;max-height:82svh;background:#12131a;border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;overflow:hidden">
       <div class="bar" style="display:flex;justify-content:flex-end;padding:10px 12px;border-bottom:1px solid var(--border)">
@@ -133,7 +94,6 @@
     </div>
   </div>
 
-  <!-- 库 -->
   <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
@@ -142,30 +102,26 @@
     const startBtn=$('startBtn'), landing=$('landing'), app=$('app');
     const thead=$('thead'), tbody=$('tbody'), exportBtn=$('exportXlsx');
 
-    // 表头/内容横向滚动同步
+    // 表头/内容横向同步
     thead.addEventListener('scroll', ()=>{ tbody.scrollLeft = thead.scrollLeft; }, {passive:true});
     tbody.addEventListener('scroll', ()=>{ thead.scrollLeft = tbody.scrollLeft; }, {passive:true});
 
-    // 列模型
-    const columns=[]; // { titleEl, headCell, colBody }
+    const columns=[];
 
-    // 进入主界面
+    // ✅ 点击后彻底移除覆盖层（不会影响后续布局），主界面顶上显示
     startBtn.onclick=()=>{
-      landing.style.display='none';
+      landing.remove();
       app.style.display='block';
       if(columns.length===0) addColumn('Code');
     };
 
-    // 图标
     function iconDelete(){
       const s=document.createElementNS('http://www.w3.org/2000/svg','svg'); s.setAttribute('viewBox','0 0 24 24');
       const p=document.createElementNS('http://www.w3.org/2000/svg','path');
-      p.setAttribute('d','M6 6l12 12M18 6L6 18');
-      p.setAttribute('stroke','#ff4d4f'); p.setAttribute('stroke-width','2'); p.setAttribute('stroke-linecap','round'); p.setAttribute('fill','none');
+      p.setAttribute('d','M6 6l12 12M18 6L6 18'); p.setAttribute('stroke','#ff4d4f'); p.setAttribute('stroke-width','2'); p.setAttribute('stroke-linecap','round'); p.setAttribute('fill','none');
       s.appendChild(p); return s;
     }
 
-    // 新增列（新增列按钮只在最右表头）
     function addColumn(title='Column'){
       const head=document.createElement('div'); head.className='head-cell';
       const t=document.createElement('div'); t.className='head-edit'; t.contentEditable='true'; t.spellcheck=false; t.textContent=title;
@@ -202,13 +158,12 @@
       }
     }
 
-    // 列内：数据行/预留行
     function makeDataRow(value=''){
       const row=document.createElement('div'); row.className='trow';
       const cell=document.createElement('div'); cell.className='cell';
       const input=document.createElement('input'); input.value=value; cell.appendChild(input);
       const del=document.createElement('button'); del.className='clear-btn'; del.appendChild(iconDelete());
-      del.onclick=()=>row.remove(); // 点击删除整行
+      del.onclick=()=>row.remove();
       row.appendChild(cell); row.appendChild(del);
       return row;
     }
@@ -218,17 +173,15 @@
       const btn=document.createElement('button'); btn.className='plus-full'; btn.textContent='＋ 扫描并添加';
       ph.appendChild(btn); colBody.appendChild(ph);
       btn.onclick=()=>{ targetCol = colBody; openModalAndScan(); };
-      return ph;
     }
 
     function addValueToColumn(colBody, val){
-      const last = colBody.lastElementChild;       // placeholder
+      const last = colBody.lastElementChild;
       const row = makeDataRow(val);
       colBody.insertBefore(row, last);
       row.scrollIntoView({behavior:'smooth',block:'center'});
     }
 
-    // 导出
     exportBtn.onclick=()=>{
       const headers = columns.map(c => (c.titleEl.innerText || '').trim() || 'Column');
       const maxRows = Math.max(0, ...columns.map(c => c.colBody.querySelectorAll('.trow').length));
@@ -247,7 +200,7 @@
       XLSX.writeFile(wb, name);
     };
 
-    // ===== ZXing 扫码（后置摄像头） =====
+    // 扫码（后置摄像头）
     const modal=$('modal'), closeBtn=$('close'), video=$('video'), hint=$('hint');
     let codeReader=null, running=false, targetCol=null;
     const constraints = { video: { facingMode: { exact: 'environment' } } };
@@ -268,14 +221,11 @@
               const val=result.getText() || '';
               onScanSuccess(val);
               try{ controls?.stop(); }catch{}
-            }else if(err && !(err instanceof ZXing.NotFoundException)){
-              console.warn(err);
             }
           }
         );
         hint.textContent='Point at a QR / Barcode.';
       }catch(e){
-        console.error(e);
         hint.textContent='Camera unavailable (need HTTPS or permission).';
       }
     }
