@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>SmartScan</title>
@@ -18,11 +18,11 @@
   }
   .wrap{width:100%; max-width:1000px; margin:0 auto; padding:18px 4vw; display:flex; flex-direction:column; gap:12px}
 
-  /* ✅ START 覆盖层：始终在屏幕正中央 */
+  /* START overlay (centered) */
   #landing{
     position:fixed; inset:0; z-index:1000;
     display:flex; align-items:center; justify-content:center;
-    background:var(--bg); /* 保持与你的背景一致 */
+    background:var(--bg);
   }
   .start{
     width:240px;height:240px;border-radius:50%;
@@ -33,7 +33,6 @@
   }
   .start:active{transform:scale(.98);background:var(--btn-press)}
 
-  /* App */
   #app{display:none}
   .topbar{display:flex;justify-content:flex-end}
   .btn{
@@ -68,12 +67,12 @@
 
 <body>
   <div class="wrap">
-    <!-- 覆盖层：仅展示 START 按钮 -->
+    <!-- START overlay -->
     <section id="landing"><button class="start" id="startBtn">START</button></section>
 
-    <!-- 主应用 -->
+    <!-- Main App -->
     <section id="app" aria-live="polite">
-      <div class="topbar"><button class="btn" id="exportXlsx">导出 XLSX</button></div>
+      <div class="topbar"><button class="btn" id="exportXlsx">Export Sheet</button></div>
       <div class="card">
         <div class="thead" id="thead"></div>
         <div class="tbody" id="tbody"></div>
@@ -81,7 +80,7 @@
     </section>
   </div>
 
-  <!-- 扫码弹窗 -->
+  <!-- Scanner Modal -->
   <div class="modal" id="modal" aria-modal="true" role="dialog" style="position:fixed;inset:0;display:none;background:rgba(0,0,0,.55);padding:10px 12px;z-index:50">
     <div class="sheet" style="width:min(92vw,520px);margin:auto;max-height:82svh;background:#12131a;border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;overflow:hidden">
       <div class="bar" style="display:flex;justify-content:flex-end;padding:10px 12px;border-bottom:1px solid var(--border)">
@@ -101,19 +100,11 @@
     const $=id=>document.getElementById(id);
     const startBtn=$('startBtn'), landing=$('landing'), app=$('app');
     const thead=$('thead'), tbody=$('tbody'), exportBtn=$('exportXlsx');
-
-    // 表头/内容横向同步
     thead.addEventListener('scroll', ()=>{ tbody.scrollLeft = thead.scrollLeft; }, {passive:true});
     tbody.addEventListener('scroll', ()=>{ thead.scrollLeft = tbody.scrollLeft; }, {passive:true});
-
     const columns=[];
 
-    // ✅ 点击后彻底移除覆盖层（不会影响后续布局），主界面顶上显示
-    startBtn.onclick=()=>{
-      landing.remove();
-      app.style.display='block';
-      if(columns.length===0) addColumn('Code');
-    };
+    startBtn.onclick=()=>{ landing.remove(); app.style.display='block'; if(columns.length===0) addColumn('Code'); };
 
     function iconDelete(){
       const s=document.createElementNS('http://www.w3.org/2000/svg','svg'); s.setAttribute('viewBox','0 0 24 24');
@@ -124,27 +115,22 @@
 
     function addColumn(title='Column'){
       const head=document.createElement('div'); head.className='head-cell';
-      const t=document.createElement('div'); t.className='head-edit'; t.contentEditable='true'; t.spellcheck=false; t.textContent=title;
-      const del=document.createElement('button'); del.className='del-col'; del.title='删除该列'; del.appendChild(iconDelete());
+      const t=document.createElement('div'); t.className='head-edit'; t.contentEditable='true'; t.textContent=title;
+      const del=document.createElement('button'); del.className='del-col'; del.title='Delete column'; del.appendChild(iconDelete());
       del.onclick=()=>deleteColumn(head);
       head.appendChild(t); head.appendChild(del); thead.appendChild(head);
-
       const col=document.createElement('div'); col.className='col'; tbody.appendChild(col);
       appendPlaceholder(col);
-
       columns.push({ titleEl:t, headCell:head, colBody:col });
       refreshAddColBtn();
     }
 
-    function deleteColumn(headCell){
-      const idx=columns.findIndex(c=>c.headCell===headCell);
-      if(idx<0) return;
-      const hasData = columns[idx].colBody.querySelector('.trow');
-      if(hasData && !confirm('该列包含数据，确定删除？')) return;
-      columns[idx].headCell.remove();
-      columns[idx].colBody.remove();
-      columns.splice(idx,1);
-      refreshAddColBtn();
+    function deleteColumn(h){
+      const i=columns.findIndex(c=>c.headCell===h);
+      if(i<0)return;
+      const hasData=columns[i].colBody.querySelector('.trow');
+      if(hasData && !confirm('This column contains data. Delete it anyway?'))return;
+      columns[i].headCell.remove(); columns[i].colBody.remove(); columns.splice(i,1); refreshAddColBtn();
     }
 
     function refreshAddColBtn(){
@@ -152,55 +138,54 @@
       if(columns.length){
         const last=columns.at(-1).headCell;
         const add=document.createElement('button');
-        add.className='add-col'; add.textContent='＋'; add.title='新增一列';
+        add.className='add-col'; add.textContent='＋'; add.title='Add new column';
         add.onclick=()=>addColumn(`Col ${columns.length+1}`);
         last.appendChild(add);
       }
     }
 
     function makeDataRow(value=''){
-      const row=document.createElement('div'); row.className='trow';
-      const cell=document.createElement('div'); cell.className='cell';
-      const input=document.createElement('input'); input.value=value; cell.appendChild(input);
-      const del=document.createElement('button'); del.className='clear-btn'; del.appendChild(iconDelete());
-      del.onclick=()=>row.remove();
-      row.appendChild(cell); row.appendChild(del);
-      return row;
+      const r=document.createElement('div'); r.className='trow';
+      const c=document.createElement('div'); c.className='cell';
+      const input=document.createElement('input'); input.value=value; c.appendChild(input);
+      const del=document.createElement('button'); del.className='clear-btn'; del.title='Delete this cell'; del.appendChild(iconDelete());
+      del.onclick=()=>r.remove();
+      r.appendChild(c); r.appendChild(del); return r;
     }
 
-    function appendPlaceholder(colBody){
+    function appendPlaceholder(col){
       const ph=document.createElement('div'); ph.className='placeholder';
-      const btn=document.createElement('button'); btn.className='plus-full'; btn.textContent='＋ 扫描并添加';
-      ph.appendChild(btn); colBody.appendChild(ph);
-      btn.onclick=()=>{ targetCol = colBody; openModalAndScan(); };
+      const btn=document.createElement('button'); btn.className='plus-full'; btn.textContent='+ Scan & Add';
+      ph.appendChild(btn); col.appendChild(ph);
+      btn.onclick=()=>{ targetCol=col; openModalAndScan(); };
     }
 
-    function addValueToColumn(colBody, val){
-      const last = colBody.lastElementChild;
+    function addValueToColumn(col, val){
+      const last = col.lastElementChild;
       const row = makeDataRow(val);
-      colBody.insertBefore(row, last);
+      col.insertBefore(row, last);
       row.scrollIntoView({behavior:'smooth',block:'center'});
     }
 
     exportBtn.onclick=()=>{
-      const headers = columns.map(c => (c.titleEl.innerText || '').trim() || 'Column');
-      const maxRows = Math.max(0, ...columns.map(c => c.colBody.querySelectorAll('.trow').length));
-      const data = [headers];
+      const headers=columns.map(c=>(c.titleEl.innerText||'').trim()||'Column');
+      const maxRows=Math.max(0,...columns.map(c=>c.colBody.querySelectorAll('.trow').length));
+      const data=[headers];
       for(let r=0;r<maxRows;r++){
-        const row = columns.map(c=>{
-          const trows = c.colBody.querySelectorAll('.trow');
-          return trows[r]?.querySelector('input')?.value || '';
+        const row=columns.map(c=>{
+          const trs=c.colBody.querySelectorAll('.trow');
+          return trs[r]?.querySelector('input')?.value||'';
         });
         data.push(row);
       }
-      const ws = XLSX.utils.aoa_to_sheet(data);
-      const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-      const d = new Date();
-      const name = `codes-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.xlsx`;
-      XLSX.writeFile(wb, name);
+      const ws=XLSX.utils.aoa_to_sheet(data);
+      const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
+      const d=new Date();
+      const name=`sheet-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.xlsx`;
+      XLSX.writeFile(wb,name);
     };
 
-    // 扫码（后置摄像头）
+    // Scanner logic
     const modal=$('modal'), closeBtn=$('close'), video=$('video'), hint=$('hint');
     let codeReader=null, running=false, targetCol=null;
     const constraints = { video: { facingMode: { exact: 'environment' } } };
@@ -209,7 +194,7 @@
     function closeModal(){ stopScan(); modal.style.display='none'; }
 
     async function startScan(){
-      hint.textContent='Starting camera…';
+      hint.textContent='Starting camera...';
       if(!codeReader) codeReader=new ZXing.BrowserMultiFormatReader();
       try{
         running=true;
@@ -218,13 +203,13 @@
           (result, err, controls)=>{
             if(!running) return;
             if(result){
-              const val=result.getText() || '';
+              const val=result.getText()||'';
               onScanSuccess(val);
               try{ controls?.stop(); }catch{}
             }
           }
         );
-        hint.textContent='Point at a QR / Barcode.';
+        hint.textContent='Point the camera at a barcode or QR code.';
       }catch(e){
         hint.textContent='Camera unavailable (need HTTPS or permission).';
       }
@@ -232,11 +217,11 @@
     function stopScan(){ running=false; try{ codeReader?.reset(); }catch{} }
 
     function onScanSuccess(val){
-      const colBody = targetCol || columns[0]?.colBody;
-      if(colBody) addValueToColumn(colBody, val);
+      const col=targetCol||columns[0]?.colBody;
+      if(col) addValueToColumn(col,val);
       navigator.clipboard?.writeText(val).catch(()=>{});
-      setTimeout(closeModal, 300);
-      targetCol = null;
+      setTimeout(closeModal,300);
+      targetCol=null;
     }
 
     closeBtn.onclick=closeModal;
