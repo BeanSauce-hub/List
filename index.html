@@ -1,427 +1,456 @@
 <!doctype html>
 <html lang="en">
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>SmartScan</title>
 
 <style>
-
 :root{
---bg:#0e0f12;
---fg:#e7e9ee;
---card:#14161c;
---border:rgba(255,255,255,.12);
---btn:#e6372a;
---danger:#ff4d4f;
---colw:320px;
+  --bg:#0e0f12;
+  --fg:#e7e9ee;
+  --muted:#9aa1ad;
+  --card:#14161c;
+  --border:rgba(255,255,255,.12);
+  --btn:#e6372a;
+  --btn-press:#c82f24;
+  --ring:#0a84ff;
+  --danger:#ff4d4f;
+  --tap:44px;
+  --colw:320px;
 }
-
 *{box-sizing:border-box;margin:0;padding:0}
-
+html,body{height:100%}
 body{
-background:var(--bg);
-color:var(--fg);
-font:16px system-ui;
+  background:var(--bg);
+  color:var(--fg);
+  min-height:100svh;
+  font:16px/1.5 ui-sans-serif,system-ui,-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial;
+  -webkit-font-smoothing:antialiased;
 }
+.wrap{width:100%; max-width:1000px; margin:0 auto; padding:18px 4vw; display:flex; flex-direction:column; gap:12px}
 
-.wrap{
-max-width:1000px;
-margin:auto;
-padding:16px;
-display:flex;
-flex-direction:column;
-gap:12px
-}
-
+/* START overlay (centered) */
 #landing{
-position:fixed;
-inset:0;
-display:flex;
-align-items:center;
-justify-content:center;
-background:#0e0f12
+  position:fixed; inset:0; z-index:1000;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--bg);
 }
-
 .start{
-width:220px;
-height:220px;
-border-radius:50%;
-border:none;
-font-size:32px;
-font-weight:700;
-background:#e6372a;
-color:white
+  width:240px;height:240px;border-radius:50%;
+  display:grid;place-items:center;cursor:pointer;user-select:none;
+  background:var(--btn);color:#fff;font-weight:900;font-size:32px;letter-spacing:.05em;border:none;
+  box-shadow:0 0 40px rgba(230,55,42,.25);
+  transition:transform .06s ease,background-color .06s ease;
 }
+.start:active{transform:scale(.98);background:var(--btn-press)}
 
 #app{display:none}
-
-.topbar{
-display:flex;
-justify-content:flex-end;
-gap:8px
-}
-
+.topbar{display:flex;justify-content:flex-end; gap:8px}
 .btn{
-border:1px solid var(--border);
-background:#1a1d25;
-color:white;
-padding:8px 12px;
-border-radius:8px;
-cursor:pointer
+  appearance:none;
+  border:1px solid var(--border);
+  background:#1a1d25;
+  color:#e7e9ee;
+  padding:8px 12px;
+  border-radius:10px;
+  font-size:14px;
+  cursor:pointer;
 }
-
-.card{
-border:1px solid var(--border);
-border-radius:12px;
-overflow:hidden
-}
-
+.card{ background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden }
 .thead,.tbody{
-display:flex;
-gap:8px;
-padding:10px;
-overflow-x:auto
+  display:flex; gap:8px; padding:10px 12px;
+  overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:thin
 }
-
-.thead{
-border-bottom:1px solid var(--border)
-}
-
+.thead{ border-bottom:1px solid var(--border) }
 .head-cell{
-min-width:var(--colw);
-display:flex;
-gap:6px
+  min-width:var(--colw); max-width:var(--colw);
+  display:flex; align-items:center; gap:8px
 }
-
 .head-edit{
-flex:1;
-background:transparent;
-color:white;
-outline:none
+  flex:1; min-height:36px; padding:6px 8px;
+  border-radius:8px; outline:none;
+  border:1px solid transparent;
+  background:transparent; color:#e7e9ee
 }
+.head-edit:focus{ border-color: color-mix(in srgb,var(--ring) 35%, transparent) }
 
-.col{
-min-width:var(--colw);
-display:flex;
-flex-direction:column;
-gap:8px
+.del-col,.add-col{
+  width:36px;height:36px;border-radius:10px;
+  display:grid;place-items:center;cursor:pointer;
+  background:#1a1d25;border:1px solid var(--border)
 }
+.del-col svg{width:18px;height:18px;stroke:var(--danger)}
+.del-col path{stroke-width:2;stroke-linecap:round;fill:none}
+.add-col{font-weight:900;font-size:18px;color:#fff}
+.add-col:active,.del-col:active{filter:brightness(.95)}
 
+.col{ min-width:var(--colw); max-width:var(--colw); display:flex; flex-direction:column; gap:8px }
 .trow{
-display:grid;
-grid-template-columns:1fr 44px;
-border:1px solid var(--border);
-border-radius:10px;
-padding:8px
+  display:grid; grid-template-columns:1fr var(--tap); gap:8px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:8px 10px;
+  background:#14161c
 }
-
 .cell input{
-width:100%;
-background:transparent;
-border:none;
-color:white
+  width:100%;
+  background:transparent;
+  border:none;
+  color:#fff;
+  font:inherit;
+  padding:6px 6px;
+  border-radius:8px;
+  outline:none
 }
-
 .clear-btn{
-border:1px solid var(--danger);
-border-radius:8px;
-background:transparent;
-color:var(--danger)
+  width:var(--tap); height:var(--tap);
+  border-radius:12px;
+  border:1.5px solid var(--danger);
+  background:transparent;
+  display:grid;
+  place-items:center;
+  cursor:pointer
 }
+.clear-btn svg{ width:22px; height:22px; stroke:var(--danger) }
+.clear-btn path{ stroke-width:2; stroke-linecap:round; fill:none }
 
-.plus-full{
-height:44px;
-border:1px dashed #444;
-background:#1a1d25;
-color:white
+.placeholder .plus-full{
+  width:100%;
+  height:var(--tap);
+  border-radius:10px;
+  border:1px dashed #3a3f4b;
+  background:#1a1d25;
+  color:#fff;
+  display:grid;
+  place-items:center;
+  font-weight:800;
+  font-size:18px;
 }
-
 </style>
 
 <body>
-
 <div class="wrap">
 
-<section id="landing">
-<button class="start" id="startBtn">START</button>
-</section>
+  <!-- START overlay -->
+  <section id="landing"><button class="start" id="startBtn">START</button></section>
 
-<section id="app">
-
-<div class="topbar">
-<button class="btn" id="copyAll">Copy All</button>
-<button class="btn" id="exportXlsx">Export Sheet</button>
-</div>
-
-<div class="card">
-<div class="thead" id="thead"></div>
-<div class="tbody" id="tbody"></div>
-</div>
-
-</section>
+  <!-- Main App -->
+  <section id="app" aria-live="polite">
+    <div class="topbar">
+      <button class="btn" id="copyAll">Copy All</button>
+      <button class="btn" id="exportXlsx">Export Sheet</button>
+    </div>
+    <div class="card">
+      <div class="thead" id="thead"></div>
+      <div class="tbody" id="tbody"></div>
+    </div>
+  </section>
 
 </div>
 
-<div id="modal" style="position:fixed;inset:0;display:none;background:rgba(0,0,0,.6)">
-<div style="width:min(520px,90vw);margin:auto;margin-top:40px;background:#12131a">
-
-<div style="padding:10px;text-align:right">
-<button class="btn" id="close">Close</button>
-</div>
-
-<div style="height:55vh;background:black">
-<video id="video" playsinline muted style="width:100%;height:100%;object-fit:cover"></video>
-</div>
-
-</div>
+<!-- Scanner Modal -->
+<div class="modal" id="modal" aria-modal="true" role="dialog"
+  style="position:fixed;inset:0;display:none;background:rgba(0,0,0,.55);padding:10px 12px;z-index:50">
+  <div class="sheet"
+    style="width:min(92vw,520px);margin:auto;max-height:82svh;background:#12131a;border:1px solid var(--border);
+           border-radius:14px;display:flex;flex-direction:column;overflow:hidden">
+    <div class="bar" style="display:flex;justify-content:flex-end;padding:10px 12px;border-bottom:1px solid var(--border)">
+      <button class="btn" id="close">Close</button>
+    </div>
+    <div class="stage" style="background:#000;height:54svh">
+      <video id="video" playsinline muted style="width:100%;height:100%;object-fit:cover"></video>
+    </div>
+    <div class="hint" id="hint"
+      style="padding:8px 12px;border-top:1px solid var(--border);color:#9aa1ad;font-size:12.5px;text-align:center">
+      Allow camera access to start scanning.
+    </div>
+  </div>
 </div>
 
 <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
+const $=id=>document.getElementById(id);
 
-const $=id=>document.getElementById(id)
+const startBtn=$('startBtn'), landing=$('landing'), app=$('app');
+const thead=$('thead'), tbody=$('tbody'), exportBtn=$('exportXlsx'), copyAllBtn=$('copyAll');
 
-const startBtn=$("startBtn")
-const landing=$("landing")
-const app=$("app")
+thead.addEventListener('scroll', ()=>{ tbody.scrollLeft = thead.scrollLeft; }, {passive:true});
+tbody.addEventListener('scroll', ()=>{ thead.scrollLeft = tbody.scrollLeft; }, {passive:true});
 
-const thead=$("thead")
-const tbody=$("tbody")
-
-const copyAllBtn=$("copyAll")
-const exportBtn=$("exportXlsx")
-
-const columns=[]
-
-let codeReader=null
-let scanLock=false
-let targetCol=null
+const columns=[];
 
 startBtn.onclick=()=>{
-landing.remove()
-app.style.display="block"
-addColumn("Code")
+  landing.remove();
+  app.style.display='block';
+  if(columns.length===0) addColumn('Code');
+};
+
+function iconDelete(){
+  const s=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  s.setAttribute('viewBox','0 0 24 24');
+  const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+  p.setAttribute('d','M6 6l12 12M18 6L6 18');
+  p.setAttribute('stroke','#ff4d4f');
+  p.setAttribute('stroke-width','2');
+  p.setAttribute('stroke-linecap','round');
+  p.setAttribute('fill','none');
+  s.appendChild(p);
+  return s;
 }
 
-function updateColumnCount(colObj){
+function addColumn(title='Column'){
+  const head=document.createElement('div');
+  head.className='head-cell';
 
-const count=colObj.colBody.querySelectorAll(".trow").length
-const baseTitle=colObj.titleEl.dataset.base||colObj.titleEl.innerText
+  const t=document.createElement('div');
+  t.className='head-edit';
+  t.contentEditable='true';
+  t.textContent=title;
 
-colObj.titleEl.dataset.base=baseTitle.replace(/\(\d+\)$/,'')
+  const del=document.createElement('button');
+  del.className='del-col';
+  del.title='Delete column';
+  del.appendChild(iconDelete());
+  del.onclick=()=>deleteColumn(head);
 
-colObj.titleEl.innerText=`${colObj.titleEl.dataset.base} (${count})`
+  head.appendChild(t);
+  head.appendChild(del);
+  thead.appendChild(head);
+
+  const col=document.createElement('div');
+  col.className='col';
+  tbody.appendChild(col);
+
+  appendPlaceholder(col);
+
+  columns.push({ titleEl:t, headCell:head, colBody:col });
+  refreshAddColBtn();
 }
 
-function addColumn(title){
+function deleteColumn(h){
+  const i=columns.findIndex(c=>c.headCell===h);
+  if(i<0)return;
+  const hasData=columns[i].colBody.querySelector('.trow');
+  if(hasData && !confirm('This column contains data. Delete it anyway?'))return;
+  columns[i].headCell.remove();
+  columns[i].colBody.remove();
+  columns.splice(i,1);
+  refreshAddColBtn();
+}
 
-const head=document.createElement("div")
-head.className="head-cell"
+function refreshAddColBtn(){
+  thead.querySelectorAll('.add-col').forEach(b=>b.remove());
+  if(columns.length){
+    const last=columns.at(-1).headCell;
+    const add=document.createElement('button');
+    add.className='add-col';
+    add.textContent='＋';
+    add.title='Add new column';
+    add.onclick=()=>addColumn(`Col ${columns.length+1}`); // ✅ 修复模板字符串
+    last.appendChild(add);
+  }
+}
 
-const edit=document.createElement("div")
-edit.className="head-edit"
-edit.contentEditable=true
-edit.innerText=title
-edit.dataset.base=title
+function makeDataRow(value=''){
+  const r=document.createElement('div');
+  r.className='trow';
 
-head.appendChild(edit)
+  const c=document.createElement('div');
+  c.className='cell';
 
-thead.appendChild(head)
+  const input=document.createElement('input');
+  input.value=value;
+  c.appendChild(input);
 
-const col=document.createElement("div")
-col.className="col"
+  const del=document.createElement('button');
+  del.className='clear-btn';
+  del.title='Delete this cell';
+  del.appendChild(iconDelete());
+  del.onclick=()=>r.remove();
 
-tbody.appendChild(col)
-
-appendPlaceholder(col)
-
-columns.push({titleEl:edit,headCell:head,colBody:col})
+  r.appendChild(c);
+  r.appendChild(del);
+  return r;
 }
 
 function appendPlaceholder(col){
+  const ph=document.createElement('div');
+  ph.className='placeholder';
+  const btn=document.createElement('button');
+  btn.className='plus-full';
+  btn.textContent='+ Scan & Add';
+  ph.appendChild(btn);
+  col.appendChild(ph);
 
-const btn=document.createElement("button")
-btn.className="plus-full"
-btn.textContent="+ Scan"
-
-btn.onclick=()=>{
-targetCol=col
-openScanner()
+  btn.onclick=()=>{
+    targetCol=col;
+    openModalAndScan();
+  };
 }
 
-col.appendChild(btn)
+function addValueToColumn(col, val){
+  const last = col.lastElementChild; // placeholder
+  const row = makeDataRow(val);
+  col.insertBefore(row, last);
+  row.scrollIntoView({behavior:'smooth',block:'center'});
 }
 
-function makeRow(val,colObj){
-
-const r=document.createElement("div")
-r.className="trow"
-
-const c=document.createElement("div")
-c.className="cell"
-
-const input=document.createElement("input")
-input.value=val
-
-c.appendChild(input)
-
-const del=document.createElement("button")
-del.className="clear-btn"
-del.textContent="x"
-
-del.onclick=()=>{
-r.remove()
-updateColumnCount(colObj)
-}
-
-r.appendChild(c)
-r.appendChild(del)
-
-return r
-}
-
-function addValueToColumn(col,val){
-
-const colObj=columns.find(c=>c.colBody===col)
-
-const row=makeRow(val,colObj)
-
-col.insertBefore(row,col.lastElementChild)
-
-if(col.children.length>500){
-col.removeChild(col.children[0])
-}
-
-updateColumnCount(colObj)
-
-}
-
-copyAllBtn.onclick=()=>{
-
-let text=""
-let total=0
-
-columns.forEach((col,i)=>{
-
-const title=(col.titleEl.dataset.base||`Col ${i+1}`).trim()
-
-const rows=col.colBody.querySelectorAll(".trow")
-
-if(rows.length===0) return
-
-text+=`${title} (${rows.length})\n`
-
-rows.forEach(r=>{
-const val=r.querySelector("input")?.value||""
-if(val){
-text+=val+"\n"
-total++
-}
-})
-
-text+="\n"
-
-})
-
-text+=`TOTAL: ${total}`
-
-navigator.clipboard.writeText(text)
-
-}
-
+/* ========= Export Excel ========= */
 exportBtn.onclick=()=>{
+  const headers=columns.map(c=>(c.titleEl.innerText||'').trim()||'Column');
+  const maxRows=Math.max(0,...columns.map(c=>c.colBody.querySelectorAll('.trow').length));
+  const data=[headers];
 
-const headers=columns.map(c=>c.titleEl.dataset.base)
+  for(let r=0;r<maxRows;r++){
+    const row=columns.map(c=>{
+      const trs=c.colBody.querySelectorAll('.trow');
+      return trs[r]?.querySelector('input')?.value||'';
+    });
+    data.push(row);
+  }
 
-const maxRows=Math.max(...columns.map(c=>c.colBody.querySelectorAll(".trow").length))
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
 
-const data=[headers]
+  const d=new Date();
+  const name=`sheet-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.xlsx`;
+  XLSX.writeFile(wb,name);
+};
 
-for(let r=0;r<maxRows;r++){
+/* ========= Copy All (Warehouse) =========
+   输出：
+   Col1 (n)
+   xxxx
+   ...
+   Col2 (n)
+   ...
+   TOTAL: N
+*/
+copyAllBtn.onclick=()=>{
+  let text='';
+  let total=0;
 
-const row=columns.map(c=>{
-const trs=c.colBody.querySelectorAll(".trow")
-return trs[r]?.querySelector("input")?.value||""
-})
+  columns.forEach((c,i)=>{
+    const title=(c.titleEl.innerText||`Col ${i+1}`).trim()||`Col ${i+1}`;
+    const rows=[...c.colBody.querySelectorAll('.trow')]
+      .map(r=>r.querySelector('input')?.value||'')
+      .filter(v=>v.trim()!=='');
+    if(rows.length===0) return;
 
-data.push(row)
+    text+=`${title} (${rows.length})\n`;
+    rows.forEach(v=>{ text+=v+'\n'; total++; });
+    text+='\n';
+  });
+
+  text+=`TOTAL: ${total}`;
+  navigator.clipboard?.writeText(text).catch(()=>{});
+};
+
+/* ========= Scanner logic (稳定版) ========= */
+const modal=$('modal'), closeBtn=$('close'), video=$('video'), hint=$('hint');
+
+let codeReader=null;
+let running=false;
+let targetCol=null;
+let scanLock=false;
+
+let scanStartTime=0;
+const CAMERA_TIMEOUT=60000; // 60s
+const constraints = { video: { facingMode: 'environment' } };
+
+function openModalAndScan(){
+  modal.style.display='flex';
+  startScan();
 }
 
-const ws=XLSX.utils.aoa_to_sheet(data)
-const wb=XLSX.utils.book_new()
-
-XLSX.utils.book_append_sheet(wb,ws,"Sheet1")
-
-XLSX.writeFile(wb,"sheet.xlsx")
-
+function closeModal(){
+  stopScan();
+  modal.style.display='none';
 }
 
-const modal=$("modal")
-const video=$("video")
-const closeBtn=$("close")
-
-function openScanner(){
-
-modal.style.display="block"
-
-const hints=new Map()
-hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.CODE_128])
-
-codeReader=new ZXing.BrowserMultiFormatReader(hints)
-
-codeReader.decodeFromConstraints(
-
-{video:{facingMode:"environment"}},
-
-video,
-
-(result,err)=>{
-
-if(result && !scanLock){
-
-scanLock=true
-
-const val=result.getText()
-
-addValueToColumn(targetCol||columns[0].colBody,val)
-
-setTimeout(()=>{
-closeScanner()
-scanLock=false
-},300)
-
+function buildReader(){
+  // 只识别 CODE_128 更稳（物流条码常用）
+  const hints = new Map();
+  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
+  return new ZXing.BrowserMultiFormatReader(hints);
 }
 
+async function startScan(){
+  hint.textContent='Starting camera...';
+  scanStartTime=Date.now();
+  scanLock=false;
+
+  if(!codeReader) codeReader=buildReader();
+
+  try{
+    running=true;
+
+    await codeReader.decodeFromConstraints(
+      constraints,
+      video,
+      (result, err, controls)=>{
+        if(!running) return;
+
+        // watchdog：60秒自动刷新一次，避免某些机型长时间卡死
+        if(Date.now() - scanStartTime > CAMERA_TIMEOUT){
+          try{ controls?.stop(); }catch{}
+          stopScan();
+          setTimeout(startScan, 120);
+          return;
+        }
+
+        if(result && !scanLock){
+          scanLock=true;
+          const val=result.getText()||'';
+          onScanSuccess(val);
+
+          try{ controls?.stop(); }catch{}
+        }
+      }
+    );
+
+    hint.textContent='Point the camera at a CODE128 barcode.';
+  }catch(e){
+    // 自动重试（权限/瞬时失败/HTTPS等）
+    hint.textContent='Camera unavailable (need HTTPS or permission). Retrying...';
+    stopScan();
+    setTimeout(startScan, 800);
+  }
 }
 
-)
+function stopScan(){
+  running=false;
 
+  // 彻底释放 camera
+  try{
+    const stream = video.srcObject;
+    if(stream) stream.getTracks().forEach(t=>t.stop());
+  }catch{}
+
+  try{ video.srcObject=null; }catch{}
+
+  try{ codeReader?.reset(); }catch{}
+  codeReader=null;
 }
 
-function closeScanner(){
+function onScanSuccess(val){
+  const col=targetCol||columns[0]?.colBody;
+  if(col) addValueToColumn(col,val);
 
-try{
+  // 复制到剪贴板（保留你原逻辑）
+  navigator.clipboard?.writeText(val).catch(()=>{});
 
-const stream=video.srcObject
-
-if(stream){
-stream.getTracks().forEach(t=>t.stop())
+  setTimeout(closeModal,300);
+  targetCol=null;
 }
 
-video.srcObject=null
-codeReader=null
-
-}catch{}
-
-modal.style.display="none"
-
-}
-
-closeBtn.onclick=closeScanner
-
+closeBtn.onclick=closeModal;
+modal.onclick=e=>{ if(e.target===modal) closeModal(); };
+addEventListener('pagehide', stopScan);
+addEventListener('beforeunload', stopScan);
 </script>
-
 </body>
 </html>
