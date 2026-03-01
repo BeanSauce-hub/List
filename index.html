@@ -6,63 +6,79 @@
 
 <style>
 :root{
---bg:#0e0f12; --fg:#e7e9ee; --muted:#9aa1ad; --card:#14161c; --border:rgba(255,255,255,.12);
---btn:#e6372a; --btn-press:#c82f24; --ring:#0a84ff; --danger:#ff4d4f;
---tap:44px; --colw:320px;
+--bg:#0e0f12;
+--fg:#e7e9ee;
+--muted:#9aa1ad;
+--card:#14161c;
+--border:rgba(255,255,255,.12);
+--btn:#e6372a;
+--btn-press:#c82f24;
+--ring:#0a84ff;
+--danger:#ff4d4f;
+--tap:44px;
+--colw:320px;
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
 
 body{
 background:var(--bg);
 color:var(--fg);
-font:16px/1.5 ui-sans-serif,system-ui;
+min-height:100svh;
+font:16px/1.5 ui-sans-serif,system-ui,-apple-system;
 }
 
 .wrap{
+width:100%;
 max-width:1000px;
-margin:auto;
-padding:18px;
+margin:0 auto;
+padding:18px 4vw;
 display:flex;
 flex-direction:column;
-gap:12px;
+gap:12px
 }
 
 #landing{
 position:fixed;
 inset:0;
+z-index:1000;
 display:flex;
 align-items:center;
 justify-content:center;
 background:var(--bg);
-z-index:1000;
 }
 
 .start{
 width:240px;
 height:240px;
 border-radius:50%;
+display:grid;
+place-items:center;
+cursor:pointer;
 background:var(--btn);
 color:#fff;
-font-size:32px;
 font-weight:900;
+font-size:32px;
 border:none;
-cursor:pointer;
 }
 
 #app{display:none}
 
 .topbar{
 display:flex;
-justify-content:flex-end
+justify-content:flex-end;
+gap:8px
 }
 
 .btn{
-background:#1a1d25;
+appearance:none;
 border:1px solid var(--border);
-color:#fff;
+background:#1a1d25;
+color:#e7e9ee;
 padding:8px 12px;
 border-radius:10px;
+font-size:14px;
 cursor:pointer
 }
 
@@ -86,15 +102,18 @@ border-bottom:1px solid var(--border)
 
 .head-cell{
 min-width:var(--colw);
+max-width:var(--colw);
 display:flex;
+align-items:center;
 gap:8px
 }
 
 .head-edit{
 flex:1;
+padding:6px 8px;
+border-radius:8px;
 background:transparent;
 color:#fff;
-border:none;
 outline:none
 }
 
@@ -102,13 +121,16 @@ outline:none
 width:36px;
 height:36px;
 border-radius:10px;
+display:grid;
+place-items:center;
+cursor:pointer;
 background:#1a1d25;
-border:1px solid var(--border);
-cursor:pointer
+border:1px solid var(--border)
 }
 
 .col{
 min-width:var(--colw);
+max-width:var(--colw);
 display:flex;
 flex-direction:column;
 gap:8px
@@ -120,7 +142,8 @@ grid-template-columns:1fr 44px;
 gap:8px;
 border:1px solid var(--border);
 border-radius:12px;
-padding:8px
+padding:8px 10px;
+background:#14161c
 }
 
 .cell input{
@@ -128,12 +151,18 @@ width:100%;
 background:transparent;
 border:none;
 color:#fff;
-outline:none
+font:inherit;
+padding:6px
 }
 
 .clear-btn{
-border:1px solid var(--danger);
+width:44px;
+height:44px;
 border-radius:12px;
+border:1.5px solid var(--danger);
+background:transparent;
+display:grid;
+place-items:center;
 cursor:pointer
 }
 
@@ -144,6 +173,8 @@ border-radius:10px;
 border:1px dashed #3a3f4b;
 background:#1a1d25;
 color:#fff;
+display:grid;
+place-items:center;
 font-weight:800
 }
 </style>
@@ -159,6 +190,7 @@ font-weight:800
 <section id="app">
 
 <div class="topbar">
+<button class="btn" id="copyAll">Copy All</button>
 <button class="btn" id="exportXlsx">Export Sheet</button>
 </div>
 
@@ -170,26 +202,20 @@ font-weight:800
 </section>
 </div>
 
+<div class="modal" id="modal" style="position:fixed;inset:0;display:none;background:rgba(0,0,0,.55);padding:10px">
 
-<div id="modal" style="position:fixed;inset:0;display:none;background:rgba(0,0,0,.55);padding:10px;z-index:50">
-
-<div style="width:min(92vw,520px);margin:auto;background:#12131a;border:1px solid var(--border);border-radius:14px">
+<div style="width:min(92vw,520px);margin:auto;background:#12131a;border-radius:14px">
 
 <div style="display:flex;justify-content:flex-end;padding:10px">
 <button class="btn" id="close">Close</button>
 </div>
 
-<div style="background:#000;height:54vh">
+<div style="background:#000;height:54svh">
 <video id="video" playsinline muted style="width:100%;height:100%;object-fit:cover"></video>
 </div>
 
-<div id="hint" style="padding:8px;text-align:center;color:#9aa1ad">
-Allow camera access
-</div>
-
 </div>
 </div>
-
 
 <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -198,99 +224,104 @@ Allow camera access
 
 const $=id=>document.getElementById(id)
 
-const startBtn=$("startBtn")
-const landing=$("landing")
-const app=$("app")
-const thead=$("thead")
-const tbody=$("tbody")
-const exportBtn=$("exportXlsx")
+const startBtn=$('startBtn')
+const landing=$('landing')
+const app=$('app')
 
-const modal=$("modal")
-const closeBtn=$("close")
-const video=$("video")
-const hint=$("hint")
+const thead=$('thead')
+const tbody=$('tbody')
+
+const exportBtn=$('exportXlsx')
+const copyAllBtn=$('copyAll')
 
 const columns=[]
 
-let codeReader=null
-let running=false
-let targetCol=null
-
-let lastScanText=''
-let lastScanAt=0
-
-const SCAN_COOLDOWN_MS=800
-
-
 startBtn.onclick=()=>{
 landing.remove()
-app.style.display="block"
-addColumn("Code")
+app.style.display='block'
+if(columns.length===0) addColumn('Code')
 }
 
+function addColumn(title='Column'){
 
-function addColumn(title="Column"){
+const head=document.createElement('div')
+head.className='head-cell'
 
-const head=document.createElement("div")
-head.className="head-cell"
-
-const t=document.createElement("div")
-t.className="head-edit"
-t.contentEditable=true
+const t=document.createElement('div')
+t.className='head-edit'
+t.contentEditable='true'
 t.textContent=title
 
+const del=document.createElement('button')
+del.className='del-col'
+del.textContent='×'
+
+del.onclick=()=>deleteColumn(head)
+
 head.appendChild(t)
+head.appendChild(del)
 
 thead.appendChild(head)
 
-const col=document.createElement("div")
-col.className="col"
+const col=document.createElement('div')
+col.className='col'
 
 tbody.appendChild(col)
 
 appendPlaceholder(col)
 
 columns.push({titleEl:t,headCell:head,colBody:col})
+
+refreshAddColBtn()
 }
 
+function deleteColumn(h){
 
+const i=columns.findIndex(c=>c.headCell===h)
+if(i<0)return
 
-function appendPlaceholder(col){
+columns[i].headCell.remove()
+columns[i].colBody.remove()
 
-const ph=document.createElement("div")
-ph.className="placeholder"
+columns.splice(i,1)
 
-const btn=document.createElement("button")
-btn.className="plus-full"
-btn.textContent="SCAN"
-
-ph.appendChild(btn)
-col.appendChild(ph)
-
-btn.onclick=()=>{
-targetCol=col
-openModalAndScan()
+refreshAddColBtn()
 }
 
+function refreshAddColBtn(){
+
+thead.querySelectorAll('.add-col').forEach(b=>b.remove())
+
+if(columns.length){
+
+const last=columns.at(-1).headCell
+
+const add=document.createElement('button')
+add.className='add-col'
+add.textContent='＋'
+
+add.onclick=()=>addColumn(`Col ${columns.length+1}`)
+
+last.appendChild(add)
+}
 }
 
+function makeDataRow(value=''){
 
-function makeDataRow(value=""){
+const r=document.createElement('div')
+r.className='trow'
 
-const r=document.createElement("div")
-r.className="trow"
+const c=document.createElement('div')
+c.className='cell'
 
-const c=document.createElement("div")
-c.className="cell"
-
-const input=document.createElement("input")
+const input=document.createElement('input')
 input.value=value
 
 c.appendChild(input)
 
-const del=document.createElement("button")
-del.className="clear-btn"
-del.textContent="X"
+const del=document.createElement('button')
+del.className='clear-btn'
+del.textContent='×'
 
 del.onclick=()=>r.remove()
 
@@ -300,67 +331,37 @@ r.appendChild(del)
 return r
 }
 
+function appendPlaceholder(col){
+
+const ph=document.createElement('div')
+ph.className='placeholder'
+
+const btn=document.createElement('button')
+btn.className='plus-full'
+btn.textContent='+ Scan & Add'
+
+ph.appendChild(btn)
+col.appendChild(ph)
+
+btn.onclick=()=>{
+targetCol=col
+openModalAndScan()
+}
+}
 
 function addValueToColumn(col,val){
 
 const last=col.lastElementChild
-
 const row=makeDataRow(val)
 
 col.insertBefore(row,last)
-
 }
-
-
-
-function alreadyInColumn(col,val){
-
-return [...col.querySelectorAll("input")]
-.some(i=>i.value===val)
-
-}
-
-
-
-function feedback(ok=true){
-
-if(navigator.vibrate){
-navigator.vibrate(ok?40:[40,40,40])
-}
-
-try{
-
-const ctx=new (window.AudioContext||window.webkitAudioContext)()
-
-const o=ctx.createOscillator()
-const g=ctx.createGain()
-
-o.frequency.value=ok?900:220
-g.gain.value=.05
-
-o.connect(g)
-g.connect(ctx.destination)
-
-o.start()
-
-setTimeout(()=>{
-
-o.stop()
-ctx.close()
-
-},80)
-
-}catch{}
-
-}
-
-
 
 exportBtn.onclick=()=>{
 
 const headers=columns.map(c=>c.titleEl.innerText)
 
-const maxRows=Math.max(0,...columns.map(c=>c.colBody.querySelectorAll(".trow").length))
+const maxRows=Math.max(...columns.map(c=>c.colBody.querySelectorAll('.trow').length))
 
 const data=[headers]
 
@@ -368,188 +369,87 @@ for(let r=0;r<maxRows;r++){
 
 const row=columns.map(c=>{
 
-const trs=c.colBody.querySelectorAll(".trow")
+const trs=c.colBody.querySelectorAll('.trow')
 
-return trs[r]?.querySelector("input")?.value||''
-
+return trs[r]?.querySelector('input')?.value||''
 })
 
 data.push(row)
-
 }
 
 const ws=XLSX.utils.aoa_to_sheet(data)
-
 const wb=XLSX.utils.book_new()
 
-XLSX.utils.book_append_sheet(wb,ws,"Sheet1")
+XLSX.utils.book_append_sheet(wb,ws,'Sheet1')
 
-XLSX.writeFile(wb,"SmartScan.xlsx")
-
+XLSX.writeFile(wb,'sheet.xlsx')
 }
 
+copyAllBtn.onclick=()=>{
 
+const headers=columns.map(c=>c.titleEl.innerText)
+
+const maxRows=Math.max(...columns.map(c=>c.colBody.querySelectorAll('.trow').length))
+
+const rows=[]
+
+rows.push(headers.join('\t'))
+
+for(let r=0;r<maxRows;r++){
+
+const row=columns.map(c=>{
+
+const trs=c.colBody.querySelectorAll('.trow')
+
+return trs[r]?.querySelector('input')?.value||''
+})
+
+rows.push(row.join('\t'))
+}
+
+navigator.clipboard.writeText(rows.join('\n'))
+
+alert('Copied to clipboard')
+}
+
+const modal=$('modal')
+const closeBtn=$('close')
+const video=$('video')
+
+let codeReader=null
+let targetCol=null
 
 function openModalAndScan(){
 
-modal.style.display="flex"
+modal.style.display='flex'
 
-startScan()
+if(!codeReader) codeReader=new ZXing.BrowserMultiFormatReader()
 
+codeReader.decodeFromConstraints(
+
+{video:{facingMode:'environment'}},
+
+video,
+
+(result,err)=>{
+
+if(result){
+
+addValueToColumn(targetCol||columns[0].colBody,result.getText())
+
+closeModal()
 }
-
-
+})
+}
 
 function closeModal(){
 
-stopScan()
-
-modal.style.display="none"
-
-}
-
-
-
-async function startScan(){
-
-hint.textContent="Starting camera..."
-
-if(!codeReader)
-codeReader=new ZXing.BrowserMultiFormatReader()
-
-running=true
-
-
-try{
-
-await codeReader.decodeFromConstraints(
-
-{video:{facingMode:"environment"}},
-
-video,
-
-(result,err,controls)=>{
-
-if(!running)return
-
-if(result){
-
-const val=result.getText()
-
-onScanSuccess(val)
-
-controls.stop()
-
-}
-
-}
-
-)
-
-hint.textContent="Point camera to barcode"
-
-}catch{
-
-try{
-
-await codeReader.decodeFromConstraints(
-
-{video:true},
-
-video,
-
-(result,err,controls)=>{
-
-if(!running)return
-
-if(result){
-
-const val=result.getText()
-
-onScanSuccess(val)
-
-controls.stop()
-
-}
-
-}
-
-)
-
-}catch{
-
-hint.textContent="Camera unavailable"
-
-}
-
-}
-
-}
-
-
-
-function stopScan(){
-
-running=false
-
 try{codeReader.reset()}catch{}
 
-const stream=video.srcObject
-
-if(stream){
-
-stream.getTracks().forEach(t=>t.stop())
-
-video.srcObject=null
-
+modal.style.display='none'
 }
-
-}
-
-
-
-function onScanSuccess(val){
-
-val=val.trim()
-
-if(!val)return
-
-const now=Date.now()
-
-if(val===lastScanText && now-lastScanAt<SCAN_COOLDOWN_MS)return
-
-lastScanText=val
-lastScanAt=now
-
-const col=targetCol||columns[0]?.colBody
-
-if(alreadyInColumn(col,val)){
-
-feedback(false)
-
-hint.textContent="Duplicate scan"
-
-return
-
-}
-
-addValueToColumn(col,val)
-
-feedback(true)
-
-hint.textContent="Scanned: "+val
-
-setTimeout(closeModal,250)
-
-}
-
-
 
 closeBtn.onclick=closeModal
-
-modal.onclick=e=>{
-if(e.target===modal)closeModal()
-}
 
 </script>
 
