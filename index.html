@@ -1,39 +1,34 @@
 <!doctype html>
 <html lang="en">
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>SmartScan</title>
 
 <style>
+
 :root{
 --bg:#0e0f12;
 --fg:#e7e9ee;
---muted:#9aa1ad;
 --card:#14161c;
 --border:rgba(255,255,255,.12);
 --btn:#e6372a;
---btn-press:#c82f24;
---ring:#0a84ff;
 --danger:#ff4d4f;
 --tap:44px;
 --colw:320px;
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
 
 body{
 background:var(--bg);
 color:var(--fg);
-min-height:100svh;
-font:16px/1.5 ui-sans-serif,system-ui,-apple-system;
+font:16px system-ui;
 }
 
 .wrap{
-width:100%;
 max-width:1000px;
-margin:0 auto;
-padding:18px 4vw;
+margin:auto;
+padding:16px;
 display:flex;
 flex-direction:column;
 gap:12px
@@ -42,25 +37,21 @@ gap:12px
 #landing{
 position:fixed;
 inset:0;
-z-index:1000;
 display:flex;
 align-items:center;
 justify-content:center;
-background:var(--bg);
+background:#0e0f12
 }
 
 .start{
-width:240px;
-height:240px;
+width:220px;
+height:220px;
 border-radius:50%;
-display:grid;
-place-items:center;
-cursor:pointer;
-background:var(--btn);
-color:#fff;
-font-weight:900;
-font-size:32px;
 border:none;
+font-size:32px;
+font-weight:700;
+background:#e6372a;
+color:white
 }
 
 #app{display:none}
@@ -72,27 +63,24 @@ gap:8px
 }
 
 .btn{
-appearance:none;
 border:1px solid var(--border);
 background:#1a1d25;
-color:#e7e9ee;
+color:white;
 padding:8px 12px;
-border-radius:10px;
-font-size:14px;
+border-radius:8px;
 cursor:pointer
 }
 
 .card{
-background:var(--card);
 border:1px solid var(--border);
-border-radius:14px;
+border-radius:12px;
 overflow:hidden
 }
 
 .thead,.tbody{
 display:flex;
 gap:8px;
-padding:10px 12px;
+padding:10px;
 overflow-x:auto
 }
 
@@ -102,35 +90,19 @@ border-bottom:1px solid var(--border)
 
 .head-cell{
 min-width:var(--colw);
-max-width:var(--colw);
 display:flex;
-align-items:center;
-gap:8px
+gap:6px
 }
 
 .head-edit{
 flex:1;
-padding:6px 8px;
-border-radius:8px;
 background:transparent;
-color:#fff;
+color:white;
 outline:none
-}
-
-.del-col,.add-col{
-width:36px;
-height:36px;
-border-radius:10px;
-display:grid;
-place-items:center;
-cursor:pointer;
-background:#1a1d25;
-border:1px solid var(--border)
 }
 
 .col{
 min-width:var(--colw);
-max-width:var(--colw);
 display:flex;
 flex-direction:column;
 gap:8px
@@ -139,44 +111,32 @@ gap:8px
 .trow{
 display:grid;
 grid-template-columns:1fr 44px;
-gap:8px;
 border:1px solid var(--border);
-border-radius:12px;
-padding:8px 10px;
-background:#14161c
+border-radius:10px;
+padding:8px
 }
 
 .cell input{
 width:100%;
 background:transparent;
 border:none;
-color:#fff;
-font:inherit;
-padding:6px
+color:white
 }
 
 .clear-btn{
-width:44px;
-height:44px;
-border-radius:12px;
-border:1.5px solid var(--danger);
+border:1px solid var(--danger);
+border-radius:8px;
 background:transparent;
-display:grid;
-place-items:center;
-cursor:pointer
+color:var(--danger)
 }
 
-.placeholder .plus-full{
-width:100%;
+.plus-full{
 height:44px;
-border-radius:10px;
-border:1px dashed #3a3f4b;
+border:1px dashed #444;
 background:#1a1d25;
-color:#fff;
-display:grid;
-place-items:center;
-font-weight:800
+color:white
 }
+
 </style>
 
 <body>
@@ -200,17 +160,17 @@ font-weight:800
 </div>
 
 </section>
+
 </div>
 
-<div class="modal" id="modal" style="position:fixed;inset:0;display:none;background:rgba(0,0,0,.55);padding:10px">
+<div id="modal" style="position:fixed;inset:0;display:none;background:rgba(0,0,0,.6)">
+<div style="width:min(520px,90vw);margin:auto;margin-top:40px;background:#12131a">
 
-<div style="width:min(92vw,520px);margin:auto;background:#12131a;border-radius:14px">
-
-<div style="display:flex;justify-content:flex-end;padding:10px">
+<div style="padding:10px;text-align:right">
 <button class="btn" id="close">Close</button>
 </div>
 
-<div style="background:#000;height:54svh">
+<div style="height:55vh;background:black">
 <video id="video" playsinline muted style="width:100%;height:100%;object-fit:cover"></video>
 </div>
 
@@ -224,104 +184,82 @@ font-weight:800
 
 const $=id=>document.getElementById(id)
 
-const startBtn=$('startBtn')
-const landing=$('landing')
-const app=$('app')
+const startBtn=$("startBtn")
+const landing=$("landing")
+const app=$("app")
 
-const thead=$('thead')
-const tbody=$('tbody')
+const thead=$("thead")
+const tbody=$("tbody")
 
-const exportBtn=$('exportXlsx')
-const copyAllBtn=$('copyAll')
+const copyAllBtn=$("copyAll")
+const exportBtn=$("exportXlsx")
 
 const columns=[]
 
+let codeReader=null
+let scanLock=false
+let targetCol=null
+
 startBtn.onclick=()=>{
 landing.remove()
-app.style.display='block'
-if(columns.length===0) addColumn('Code')
+app.style.display="block"
+addColumn("Code")
 }
 
-function addColumn(title='Column'){
+function addColumn(title){
 
-const head=document.createElement('div')
-head.className='head-cell'
+const head=document.createElement("div")
+head.className="head-cell"
 
-const t=document.createElement('div')
-t.className='head-edit'
-t.contentEditable='true'
-t.textContent=title
+const edit=document.createElement("div")
+edit.className="head-edit"
+edit.contentEditable=true
+edit.textContent=title
 
-const del=document.createElement('button')
-del.className='del-col'
-del.textContent='×'
-
-del.onclick=()=>deleteColumn(head)
-
-head.appendChild(t)
-head.appendChild(del)
+head.appendChild(edit)
 
 thead.appendChild(head)
 
-const col=document.createElement('div')
-col.className='col'
+const col=document.createElement("div")
+col.className="col"
 
 tbody.appendChild(col)
 
 appendPlaceholder(col)
 
-columns.push({titleEl:t,headCell:head,colBody:col})
-
-refreshAddColBtn()
+columns.push({titleEl:edit,headCell:head,colBody:col})
 }
 
-function deleteColumn(h){
+function appendPlaceholder(col){
 
-const i=columns.findIndex(c=>c.headCell===h)
-if(i<0)return
+const btn=document.createElement("button")
+btn.className="plus-full"
+btn.textContent="+ Scan"
 
-columns[i].headCell.remove()
-columns[i].colBody.remove()
-
-columns.splice(i,1)
-
-refreshAddColBtn()
+btn.onclick=()=>{
+targetCol=col
+openScanner()
 }
 
-function refreshAddColBtn(){
-
-thead.querySelectorAll('.add-col').forEach(b=>b.remove())
-
-if(columns.length){
-
-const last=columns.at(-1).headCell
-
-const add=document.createElement('button')
-add.className='add-col'
-add.textContent='＋'
-
-add.onclick=()=>addColumn(`Col ${columns.length+1}`)
-
-last.appendChild(add)
-}
+col.appendChild(btn)
 }
 
-function makeDataRow(value=''){
+function makeRow(val){
 
-const r=document.createElement('div')
-r.className='trow'
+const r=document.createElement("div")
+r.className="trow"
 
-const c=document.createElement('div')
-c.className='cell'
+const c=document.createElement("div")
+c.className="cell"
 
-const input=document.createElement('input')
-input.value=value
+const input=document.createElement("input")
+input.value=val
 
 c.appendChild(input)
 
-const del=document.createElement('button')
-del.className='clear-btn'
-del.textContent='×'
+const del=document.createElement("button")
+del.className="clear-btn"
+del.textContent="x"
 
 del.onclick=()=>r.remove()
 
@@ -331,47 +269,54 @@ r.appendChild(del)
 return r
 }
 
-function appendPlaceholder(col){
-
-const ph=document.createElement('div')
-ph.className='placeholder'
-
-const btn=document.createElement('button')
-btn.className='plus-full'
-btn.textContent='+ Scan & Add'
-
-ph.appendChild(btn)
-col.appendChild(ph)
-
-btn.onclick=()=>{
-targetCol=col
-openModalAndScan()
-}
-}
-
 function addValueToColumn(col,val){
 
-const last=col.lastElementChild
-const row=makeDataRow(val)
+const row=makeRow(val)
 
-col.insertBefore(row,last)
+col.insertBefore(row,col.lastElementChild)
+
+if(col.children.length>500){
+col.removeChild(col.children[0])
+}
+
+}
+
+copyAllBtn.onclick=()=>{
+
+const headers=columns.map(c=>c.titleEl.innerText)
+
+const maxRows=Math.max(...columns.map(c=>c.colBody.querySelectorAll(".trow").length))
+
+const rows=[]
+rows.push(headers.join("\t"))
+
+for(let r=0;r<maxRows;r++){
+
+const row=columns.map(c=>{
+const trs=c.colBody.querySelectorAll(".trow")
+return trs[r]?.querySelector("input")?.value||""
+})
+
+rows.push(row.join("\t"))
+}
+
+navigator.clipboard.writeText(rows.join("\n"))
+
 }
 
 exportBtn.onclick=()=>{
 
 const headers=columns.map(c=>c.titleEl.innerText)
 
-const maxRows=Math.max(...columns.map(c=>c.colBody.querySelectorAll('.trow').length))
+const maxRows=Math.max(...columns.map(c=>c.colBody.querySelectorAll(".trow").length))
 
 const data=[headers]
 
 for(let r=0;r<maxRows;r++){
 
 const row=columns.map(c=>{
-
-const trs=c.colBody.querySelectorAll('.trow')
-
-return trs[r]?.querySelector('input')?.value||''
+const trs=c.colBody.querySelectorAll(".trow")
+return trs[r]?.querySelector("input")?.value||""
 })
 
 data.push(row)
@@ -380,76 +325,75 @@ data.push(row)
 const ws=XLSX.utils.aoa_to_sheet(data)
 const wb=XLSX.utils.book_new()
 
-XLSX.utils.book_append_sheet(wb,ws,'Sheet1')
+XLSX.utils.book_append_sheet(wb,ws,"Sheet1")
 
-XLSX.writeFile(wb,'sheet.xlsx')
+XLSX.writeFile(wb,"sheet.xlsx")
+
 }
 
-copyAllBtn.onclick=()=>{
+const modal=$("modal")
+const video=$("video")
+const closeBtn=$("close")
 
-const headers=columns.map(c=>c.titleEl.innerText)
+function openScanner(){
 
-const maxRows=Math.max(...columns.map(c=>c.colBody.querySelectorAll('.trow').length))
+modal.style.display="block"
 
-const rows=[]
+const hints=new Map()
+hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.CODE_128])
 
-rows.push(headers.join('\t'))
-
-for(let r=0;r<maxRows;r++){
-
-const row=columns.map(c=>{
-
-const trs=c.colBody.querySelectorAll('.trow')
-
-return trs[r]?.querySelector('input')?.value||''
-})
-
-rows.push(row.join('\t'))
-}
-
-navigator.clipboard.writeText(rows.join('\n'))
-
-alert('Copied to clipboard')
-}
-
-const modal=$('modal')
-const closeBtn=$('close')
-const video=$('video')
-
-let codeReader=null
-let targetCol=null
-
-function openModalAndScan(){
-
-modal.style.display='flex'
-
-if(!codeReader) codeReader=new ZXing.BrowserMultiFormatReader()
+codeReader=new ZXing.BrowserMultiFormatReader(hints)
 
 codeReader.decodeFromConstraints(
 
-{video:{facingMode:'environment'}},
+{video:{facingMode:"environment"}},
 
 video,
 
 (result,err)=>{
 
-if(result){
+if(result && !scanLock){
 
-addValueToColumn(targetCol||columns[0].colBody,result.getText())
+scanLock=true
 
-closeModal()
+const val=result.getText()
+
+addValueToColumn(targetCol||columns[0].colBody,val)
+
+setTimeout(()=>{
+closeScanner()
+scanLock=false
+},300)
+
 }
-})
+
 }
 
-function closeModal(){
+)
 
-try{codeReader.reset()}catch{}
-
-modal.style.display='none'
 }
 
-closeBtn.onclick=closeModal
+function closeScanner(){
+
+try{
+
+const stream=video.srcObject
+
+if(stream){
+stream.getTracks().forEach(t=>t.stop())
+}
+
+video.srcObject=null
+
+codeReader=null
+
+}catch{}
+
+modal.style.display="none"
+
+}
+
+closeBtn.onclick=closeScanner
 
 </script>
 
