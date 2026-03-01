@@ -248,7 +248,7 @@ function refreshAddColBtn(){
     add.className='add-col';
     add.textContent='＋';
     add.title='Add new column';
-    add.onclick=()=>addColumn(`Col ${columns.length+1}`); // ✅ 修复模板字符串
+    add.onclick=()=>addColumn(`Col ${columns.length+1}`);
     last.appendChild(add);
   }
 }
@@ -295,6 +295,12 @@ function addValueToColumn(col, val){
   const row = makeDataRow(val);
   col.insertBefore(row, last);
   row.scrollIntoView({behavior:'smooth',block:'center'});
+
+  // 简单性能保护：仅限制 DOM 节点数量（导出/复制仍基于 DOM）
+  const rows = col.querySelectorAll('.trow');
+  if(rows.length > 500){
+    rows[0].remove();
+  }
 }
 
 /* ========= Export Excel ========= */
@@ -320,15 +326,7 @@ exportBtn.onclick=()=>{
   XLSX.writeFile(wb,name);
 };
 
-/* ========= Copy All (Warehouse) =========
-   输出：
-   Col1 (n)
-   xxxx
-   ...
-   Col2 (n)
-   ...
-   TOTAL: N
-*/
+/* ========= Copy All (Warehouse Vertical + counts + TOTAL) ========= */
 copyAllBtn.onclick=()=>{
   let text='';
   let total=0;
@@ -337,7 +335,8 @@ copyAllBtn.onclick=()=>{
     const title=(c.titleEl.innerText||`Col ${i+1}`).trim()||`Col ${i+1}`;
     const rows=[...c.colBody.querySelectorAll('.trow')]
       .map(r=>r.querySelector('input')?.value||'')
-      .filter(v=>v.trim()!=='');
+      .map(v=>v.trim())
+      .filter(v=>v!=='');
     if(rows.length===0) return;
 
     text+=`${title} (${rows.length})\n`;
@@ -349,16 +348,26 @@ copyAllBtn.onclick=()=>{
   navigator.clipboard?.writeText(text).catch(()=>{});
 };
 
-/* ========= Scanner logic (稳定版) ========= */
+/* ========= Scanner logic (最终稳定) ========= */
 const modal=$('modal'), closeBtn=$('close'), video=$('video'), hint=$('hint');
 
 let codeReader=null;
+let controlsRef=null;
 let running=false;
 let targetCol=null;
+
+// 强制“一次识别只入一次”
 let scanLock=false;
 
+// 额外防抖：同一个值在 cooldown 内不再入（防极端机型）
+let lastVal='';
+let lastTime=0;
+const COOLDOWN_MS=800;
+
+// watchdog
 let scanStartTime=0;
 const CAMERA_TIMEOUT=60000; // 60s
+
 const constraints = { video: { facingMode: 'environment' } };
 
 function openModalAndScan(){
@@ -372,7 +381,6 @@ function closeModal(){
 }
 
 function buildReader(){
-  // 只识别 CODE_128 更稳（物流条码常用）
   const hints = new Map();
   hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.CODE_128]);
   return new ZXing.BrowserMultiFormatReader(hints);
@@ -380,8 +388,12 @@ function buildReader(){
 
 async function startScan(){
   hint.textContent='Starting camera...';
-  scanStartTime=Date.now();
+
+  // reset state
   scanLock=false;
+  lastVal='';
+  lastTime=0;
+  scanStartTime=Date.now();
 
   if(!codeReader) codeReader=buildReader();
 
@@ -392,46 +404,61 @@ async function startScan(){
       constraints,
       video,
       (result, err, controls)=>{
+        controlsRef = controls;
+
         if(!running) return;
 
-        // watchdog：60秒自动刷新一次，避免某些机型长时间卡死
+        // watchdog
         if(Date.now() - scanStartTime > CAMERA_TIMEOUT){
-          try{ controls?.stop(); }catch{}
           stopScan();
-          setTimeout(startScan, 120);
+          setTimeout(startScan, 200);
           return;
         }
 
-        if(result && !scanLock){
-          scanLock=true;
-          const val=result.getText()||'';
-          onScanSuccess(val);
+        if(!result) return;
 
-          try{ controls?.stop(); }catch{}
-        }
+        const val=(result.getText()||'').trim();
+        if(!val) return;
+
+        // 关键：一旦识别到，立刻停掉扫描（彻底防疯狂连扫）
+        if(scanLock) return;
+
+        const now=Date.now();
+        if(val === lastVal && (now - lastTime) < COOLDOWN_MS) return;
+
+        scanLock=true;
+        lastVal=val;
+        lastTime=now;
+
+        // 先停再入库（最稳）
+        stopScan();
+        onScanSuccess(val);
       }
     );
 
     hint.textContent='Point the camera at a CODE128 barcode.';
   }catch(e){
-    // 自动重试（权限/瞬时失败/HTTPS等）
-    hint.textContent='Camera unavailable (need HTTPS or permission). Retrying...';
+    hint.textContent='Camera unavailable (need HTTPS/permission). Retrying...';
     stopScan();
-    setTimeout(startScan, 800);
+    setTimeout(startScan, 900);
   }
 }
 
 function stopScan(){
   running=false;
 
-  // 彻底释放 camera
+  // 停 controls
+  try{ controlsRef?.stop(); }catch{}
+  controlsRef=null;
+
+  // 释放 stream
   try{
     const stream = video.srcObject;
     if(stream) stream.getTracks().forEach(t=>t.stop());
   }catch{}
-
   try{ video.srcObject=null; }catch{}
 
+  // reset reader
   try{ codeReader?.reset(); }catch{}
   codeReader=null;
 }
@@ -440,10 +467,11 @@ function onScanSuccess(val){
   const col=targetCol||columns[0]?.colBody;
   if(col) addValueToColumn(col,val);
 
-  // 复制到剪贴板（保留你原逻辑）
+  // 保留：扫完自动复制单条
   navigator.clipboard?.writeText(val).catch(()=>{});
 
-  setTimeout(closeModal,300);
+  // 关弹窗
+  setTimeout(closeModal, 80);
   targetCol=null;
 }
 
