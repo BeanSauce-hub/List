@@ -3,462 +3,231 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>SmartScan</title>
-
 <style>
-:root{
-  --bg:#0e0f12;
-  --fg:#e7e9ee;
-  --card:#14161c;
-  --border:rgba(255,255,255,.12);
-  --btn:#e6372a;
-  --danger:#ff4d4f;
-  --tap:44px;
-  --colw:320px;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{
-  background:var(--bg);
-  color:var(--fg);
-  font:16px system-ui;
-}
+  :root{
+    --bg:#0e0f12; --fg:#e7e9ee; --muted:#9aa1ad; --card:#14161c; --border:rgba(255,255,255,.12);
+    --btn:#e6372a; --btn-press:#c82f24; --ring:#0a84ff; --danger:#ff4d4f;
+    --tap:44px; --colw:320px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--fg); min-height:100svh;
+    font:16px/1.5 ui-sans-serif,system-ui,-apple-system,"SF Pro Text",Segoe UI,Roboto,Helvetica,Arial;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{width:100%; max-width:1000px; margin:0 auto; padding:18px 4vw; display:flex; flex-direction:column; gap:12px}
 
-.wrap{max-width:1000px;margin:auto;padding:18px 4vw;display:flex;flex-direction:column;gap:12px}
+  /* START overlay (centered) */
+  #landing{
+    position:fixed; inset:0; z-index:1000;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--bg);
+  }
+  .start{
+    width:240px;height:240px;border-radius:50%;
+    display:grid;place-items:center;cursor:pointer;user-select:none;
+    background:var(--btn);color:#fff;font-weight:900;font-size:32px;letter-spacing:.05em;border:none;
+    box-shadow:0 0 40px rgba(230,55,42,.25);
+    transition:transform .06s ease,background-color .06s ease;
+  }
+  .start:active{transform:scale(.98);background:var(--btn-press)}
 
-#landing{
-position:fixed;inset:0;
-display:flex;align-items:center;justify-content:center;
-background:#0e0f12
-}
+  #app{display:none}
+  .topbar{display:flex;justify-content:flex-end}
+  .btn{
+    appearance:none; border:1px solid var(--border); background:#1a1d25; color:#e7e9ee;
+    padding:8px 12px; border-radius:10px; font-size:14px; cursor:pointer;
+  }
+  .card{ background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden }
 
-.start{
-width:240px;height:240px;border-radius:50%;
-background:#e6372a;color:#fff;
-font-size:32px;font-weight:900;
-border:none;cursor:pointer
-}
+  .thead,.tbody{ display:flex; gap:8px; padding:10px 12px; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:thin }
+  .thead{ border-bottom:1px solid var(--border) }
 
-#app{display:none}
+  .head-cell{ min-width:var(--colw); max-width:var(--colw); display:flex; align-items:center; gap:8px }
+  .head-edit{ flex:1; min-height:36px; padding:6px 8px; border-radius:8px; outline:none; border:1px solid transparent; background:transparent; color:#e7e9ee }
+  .head-edit:focus{ border-color: color-mix(in srgb,var(--ring) 35%, transparent) }
 
-.topbar{display:flex;justify-content:flex-end;gap:8px}
+  .del-col,.add-col{ width:36px;height:36px;border-radius:10px;display:grid;place-items:center;cursor:pointer;background:#1a1d25;border:1px solid var(--border) }
+  .del-col svg{width:18px;height:18px;stroke:var(--danger)} .del-col path{stroke-width:2;stroke-linecap:round;fill:none}
+  .add-col{font-weight:900;font-size:18px;color:#fff} .add-col:active,.del-col:active{filter:brightness(.95)}
 
-.btn{
-border:1px solid var(--border);
-background:#1a1d25;
-color:#fff;
-padding:8px 12px;
-border-radius:10px;
-cursor:pointer
-}
+  .col{ min-width:var(--colw); max-width:var(--colw); display:flex; flex-direction:column; gap:8px }
 
-.card{
-background:#14161c;
-border:1px solid var(--border);
-border-radius:14px;
-overflow:hidden
-}
+  .trow{ display:grid; grid-template-columns:1fr var(--tap); gap:8px; border:1px solid var(--border); border-radius:12px; padding:8px 10px; background:#14161c }
+  .cell input{ width:100%; background:transparent; border:none; color:#fff; font:inherit; padding:6px 6px; border-radius:8px; outline:none }
+  .clear-btn{ width:var(--tap); height:var(--tap); border-radius:12px; border:1.5px solid var(--danger); background:transparent; display:grid; place-items:center; cursor:pointer }
+  .clear-btn svg{ width:22px; height:22px; stroke:var(--danger) } .clear-btn path{ stroke-width:2; stroke-linecap:round; fill:none }
 
-.thead,.tbody{
-display:flex;
-gap:8px;
-padding:10px 12px;
-overflow-x:auto
-}
-
-.thead{border-bottom:1px solid var(--border)}
-
-.head-cell{
-min-width:320px;
-display:flex;
-align-items:center;
-gap:8px
-}
-
-.head-edit{
-flex:1;
-background:transparent;
-color:#fff;
-border:none;
-outline:none
-}
-
-.col{
-min-width:320px;
-display:flex;
-flex-direction:column;
-gap:8px
-}
-
-.trow{
-display:grid;
-grid-template-columns:1fr 44px;
-gap:8px;
-border:1px solid var(--border);
-border-radius:12px;
-padding:8px
-}
-
-.cell input{
-width:100%;
-background:transparent;
-border:none;
-color:#fff
-}
-
-.clear-btn{
-width:44px;height:44px;
-border-radius:12px;
-border:1px solid #ff4d4f;
-background:transparent;
-color:#ff4d4f;
-cursor:pointer
-}
-
-.placeholder button{
-width:100%;
-height:44px;
-border-radius:10px;
-border:1px dashed #3a3f4b;
-background:#1a1d25;
-color:#fff;
-font-weight:800
-}
-
-.modal{
-position:fixed;inset:0;
-display:none;
-background:rgba(0,0,0,.55)
-}
-
-.stage{background:#000;height:54vh}
+  .placeholder .plus-full{
+    width:100%; height:var(--tap); border-radius:10px; border:1px dashed #3a3f4b;
+    background:#1a1d25; color:#fff; display:grid; place-items:center; font-weight:800; font-size:18px;
+  }
 </style>
 
 <body>
-
-<div class="wrap">
-
-<section id="landing">
-<button class="start" id="startBtn">START</button>
-</section>
-
-<section id="app">
-
-<div class="topbar">
-<button class="btn" id="copyAll">Copy All</button>
-<button class="btn" id="exportXlsx">Export Sheet</button>
-</div>
-
-<div class="card">
-<div class="thead" id="thead"></div>
-<div class="tbody" id="tbody"></div>
-</div>
-
-</section>
-
-</div>
-
-<div class="modal" id="modal">
-
-<div style="width:min(92vw,520px);margin:auto;background:#12131a;border-radius:14px">
-
-<div style="display:flex;justify-content:flex-end;padding:10px">
-<button class="btn" id="close">Close</button>
-</div>
-
-<div class="stage">
-<video id="video" playsinline muted style="width:100%;height:100%;object-fit:cover"></video>
-</div>
-
-<div id="hint" style="padding:8px;text-align:center;color:#aaa">
-Allow camera access to start scanning
-</div>
-
-</div>
-
-</div>
-
-<script src="https://unpkg.com/@zxing/library@0.20.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
-<script>
-
-const $=id=>document.getElementById(id)
-
-const startBtn=$('startBtn')
-const landing=$('landing')
-const app=$('app')
-
-const thead=$('thead')
-const tbody=$('tbody')
-
-const copyAllBtn=$('copyAll')
-const exportBtn=$('exportXlsx')
-
-const modal=$('modal')
-const video=$('video')
-const hint=$('hint')
-const closeBtn=$('close')
-
-let reader=null
-let controls=null
-let scanning=false
-let targetCol=null
-
-const columns=[]
-
-startBtn.onclick=()=>{
-landing.remove()
-app.style.display='block'
-addColumn('Code')
-}
-
-function addColumn(title){
-
-const head=document.createElement('div')
-head.className='head-cell'
-
-const t=document.createElement('div')
-t.className='head-edit'
-t.contentEditable=true
-t.textContent=title
-
-head.appendChild(t)
-thead.appendChild(head)
-
-const col=document.createElement('div')
-col.className='col'
-
-tbody.appendChild(col)
-
-appendPlaceholder(col)
-
-columns.push({titleEl:t,colBody:col})
-
-}
-
-function appendPlaceholder(col){
-
-const ph=document.createElement('div')
-ph.className='placeholder'
-
-const btn=document.createElement('button')
-btn.textContent='+ Scan & Add'
-
-btn.onclick=()=>{
-targetCol=col
-openModalAndScan()
-}
-
-ph.appendChild(btn)
-col.appendChild(ph)
-
-}
-
-function makeDataRow(val){
-
-const r=document.createElement('div')
-r.className='trow'
-
-const c=document.createElement('div')
-c.className='cell'
-
-const input=document.createElement('input')
-input.value=val
-
-c.appendChild(input)
-
-const del=document.createElement('button')
-del.className='clear-btn'
-del.textContent='X'
-
-del.onclick=()=>r.remove()
-
-r.appendChild(c)
-r.appendChild(del)
-
-return r
-
-}
-
-function addValueToColumn(col,val){
-
-const last=col.lastElementChild
-const row=makeDataRow(val)
-
-col.insertBefore(row,last)
-
-const rows=col.querySelectorAll('.trow')
-
-if(rows.length>500){
-rows[0].remove()
-}
-
-}
-
-function openModalAndScan(){
-modal.style.display='flex'
-startScan()
-}
-
-function closeModal(){
-stopScan()
-modal.style.display='none'
-}
-
-async function startScan(){
-
-if(scanning) return
-
-scanning=true
-
-reader=new ZXing.BrowserMultiFormatReader()
-
-const hints=new Map()
-hints.set(
-ZXing.DecodeHintType.POSSIBLE_FORMATS,
-[
-ZXing.BarcodeFormat.CODE_128,
-ZXing.BarcodeFormat.QR_CODE
-]
-)
-
-reader.hints=hints
-
-await reader.decodeFromConstraints(
-{video:{facingMode:'environment'}},
-video,
-(result,err,c)=>{
-
-controls=c
-
-if(!scanning) return
-
-if(result){
-
-const val=result.getText().trim()
-
-if(val){
-
-stopScan()
-onScanSuccess(val)
-
-}
-
-}
-
-}
-)
-
-}
-
-function stopScan(){
-
-scanning=false
-
-try{controls?.stop()}catch{}
-
-controls=null
-
-try{
-const stream=video.srcObject
-if(stream)stream.getTracks().forEach(t=>t.stop())
-}catch{}
-
-video.srcObject=null
-
-try{reader?.reset()}catch{}
-
-reader=null
-
-}
-
-function onScanSuccess(val){
-
-const col=targetCol||columns[0]?.colBody
-
-if(col){
-addValueToColumn(col,val)
-}
-
-navigator.clipboard?.writeText(val).catch(()=>{})
-
-setTimeout(closeModal,100)
-
-targetCol=null
-
-}
-
-closeBtn.onclick=closeModal
-
-modal.onclick=e=>{
-if(e.target===modal)closeModal()
-}
-
-addEventListener('pagehide',stopScan)
-addEventListener('beforeunload',stopScan)
-
-
-copyAllBtn.onclick=()=>{
-
-let text=''
-let total=0
-
-columns.forEach((c,i)=>{
-
-const title=(c.titleEl.innerText||`Col ${i+1}`).trim()
-
-const rows=[...c.colBody.querySelectorAll('.trow')]
-.map(r=>r.querySelector('input').value.trim())
-.filter(v=>v!=='')
-
-if(rows.length===0)return
-
-text+=`${title} (${rows.length})\n`
-
-rows.forEach(v=>{
-text+=v+'\n'
-total++
-})
-
-text+='\n'
-
-})
-
-text+=`TOTAL: ${total}`
-
-navigator.clipboard.writeText(text)
-
-}
-
-exportBtn.onclick=()=>{
-
-const headers=columns.map(c=>c.titleEl.innerText||'Column')
-
-const maxRows=Math.max(...columns.map(c=>c.colBody.querySelectorAll('.trow').length))
-
-const data=[headers]
-
-for(let i=0;i<maxRows;i++){
-
-const row=columns.map(c=>{
-const trs=c.colBody.querySelectorAll('.trow')
-return trs[i]?.querySelector('input').value||''
-})
-
-data.push(row)
-
-}
-
-const ws=XLSX.utils.aoa_to_sheet(data)
-
-const wb=XLSX.utils.book_new()
-
-XLSX.utils.book_append_sheet(wb,ws,'Sheet1')
-
-XLSX.writeFile(wb,'SmartScan.xlsx')
-
-}
-
-</script>
-
+  <div class="wrap">
+    <!-- START overlay -->
+    <section id="landing"><button class="start" id="startBtn">START</button></section>
+
+    <!-- Main App -->
+    <section id="app" aria-live="polite">
+      <div class="topbar"><button class="btn" id="exportXlsx">Export Sheet</button></div>
+      <div class="card">
+        <div class="thead" id="thead"></div>
+        <div class="tbody" id="tbody"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Scanner Modal -->
+  <div class="modal" id="modal" aria-modal="true" role="dialog" style="position:fixed;inset:0;display:none;background:rgba(0,0,0,.55);padding:10px 12px;z-index:50">
+    <div class="sheet" style="width:min(92vw,520px);margin:auto;max-height:82svh;background:#12131a;border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;overflow:hidden">
+      <div class="bar" style="display:flex;justify-content:flex-end;padding:10px 12px;border-bottom:1px solid var(--border)">
+        <button class="btn" id="close">Close</button>
+      </div>
+      <div class="stage" style="background:#000;height:54svh">
+        <video id="video" playsinline muted style="width:100%;height:100%;object-fit:cover"></video>
+      </div>
+      <div class="hint" id="hint" style="padding:8px 12px;border-top:1px solid var(--border);color:#9aa1ad;font-size:12.5px;text-align:center">Allow camera access to start scanning.</div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <script>
+    const $=id=>document.getElementById(id);
+    const startBtn=$('startBtn'), landing=$('landing'), app=$('app');
+    const thead=$('thead'), tbody=$('tbody'), exportBtn=$('exportXlsx');
+    thead.addEventListener('scroll', ()=>{ tbody.scrollLeft = thead.scrollLeft; }, {passive:true});
+    tbody.addEventListener('scroll', ()=>{ thead.scrollLeft = tbody.scrollLeft; }, {passive:true});
+    const columns=[];
+
+    startBtn.onclick=()=>{ landing.remove(); app.style.display='block'; if(columns.length===0) addColumn('Code'); };
+
+    function iconDelete(){
+      const s=document.createElementNS('http://www.w3.org/2000/svg','svg'); s.setAttribute('viewBox','0 0 24 24');
+      const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+      p.setAttribute('d','M6 6l12 12M18 6L6 18'); p.setAttribute('stroke','#ff4d4f'); p.setAttribute('stroke-width','2'); p.setAttribute('stroke-linecap','round'); p.setAttribute('fill','none');
+      s.appendChild(p); return s;
+    }
+
+    function addColumn(title='Column'){
+      const head=document.createElement('div'); head.className='head-cell';
+      const t=document.createElement('div'); t.className='head-edit'; t.contentEditable='true'; t.textContent=title;
+      const del=document.createElement('button'); del.className='del-col'; del.title='Delete column'; del.appendChild(iconDelete());
+      del.onclick=()=>deleteColumn(head);
+      head.appendChild(t); head.appendChild(del); thead.appendChild(head);
+      const col=document.createElement('div'); col.className='col'; tbody.appendChild(col);
+      appendPlaceholder(col);
+      columns.push({ titleEl:t, headCell:head, colBody:col });
+      refreshAddColBtn();
+    }
+
+    function deleteColumn(h){
+      const i=columns.findIndex(c=>c.headCell===h);
+      if(i<0)return;
+      const hasData=columns[i].colBody.querySelector('.trow');
+      if(hasData && !confirm('This column contains data. Delete it anyway?'))return;
+      columns[i].headCell.remove(); columns[i].colBody.remove(); columns.splice(i,1); refreshAddColBtn();
+    }
+
+    function refreshAddColBtn(){
+      thead.querySelectorAll('.add-col').forEach(b=>b.remove());
+      if(columns.length){
+        const last=columns.at(-1).headCell;
+        const add=document.createElement('button');
+        add.className='add-col'; add.textContent='＋'; add.title='Add new column';
+        add.onclick=()=>addColumn(`Col ${columns.length+1}`);
+        last.appendChild(add);
+      }
+    }
+
+    function makeDataRow(value=''){
+      const r=document.createElement('div'); r.className='trow';
+      const c=document.createElement('div'); c.className='cell';
+      const input=document.createElement('input'); input.value=value; c.appendChild(input);
+      const del=document.createElement('button'); del.className='clear-btn'; del.title='Delete this cell'; del.appendChild(iconDelete());
+      del.onclick=()=>r.remove();
+      r.appendChild(c); r.appendChild(del); return r;
+    }
+
+    function appendPlaceholder(col){
+      const ph=document.createElement('div'); ph.className='placeholder';
+      const btn=document.createElement('button'); btn.className='plus-full'; btn.textContent='+ Scan & Add';
+      ph.appendChild(btn); col.appendChild(ph);
+      btn.onclick=()=>{ targetCol=col; openModalAndScan(); };
+    }
+
+    function addValueToColumn(col, val){
+      const last = col.lastElementChild;
+      const row = makeDataRow(val);
+      col.insertBefore(row, last);
+      row.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+
+    exportBtn.onclick=()=>{
+      const headers=columns.map(c=>(c.titleEl.innerText||'').trim()||'Column');
+      const maxRows=Math.max(0,...columns.map(c=>c.colBody.querySelectorAll('.trow').length));
+      const data=[headers];
+      for(let r=0;r<maxRows;r++){
+        const row=columns.map(c=>{
+          const trs=c.colBody.querySelectorAll('.trow');
+          return trs[r]?.querySelector('input')?.value||'';
+        });
+        data.push(row);
+      }
+      const ws=XLSX.utils.aoa_to_sheet(data);
+      const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
+      const d=new Date();
+      const name=`sheet-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.xlsx`;
+      XLSX.writeFile(wb,name);
+    };
+
+    // Scanner logic
+    const modal=$('modal'), closeBtn=$('close'), video=$('video'), hint=$('hint');
+    let codeReader=null, running=false, targetCol=null;
+    const constraints = { video: { facingMode: { exact: 'environment' } } };
+
+    function openModalAndScan(){ modal.style.display='flex'; startScan(); }
+    function closeModal(){ stopScan(); modal.style.display='none'; }
+
+    async function startScan(){
+      hint.textContent='Starting camera...';
+      if(!codeReader) codeReader=new ZXing.BrowserMultiFormatReader();
+      try{
+        running=true;
+        await codeReader.decodeFromConstraints(
+          constraints, video,
+          (result, err, controls)=>{
+            if(!running) return;
+            if(result){
+              const val=result.getText()||'';
+              onScanSuccess(val);
+              try{ controls?.stop(); }catch{}
+            }
+          }
+        );
+        hint.textContent='Point the camera at a barcode or QR code.';
+      }catch(e){
+        hint.textContent='Camera unavailable (need HTTPS or permission).';
+      }
+    }
+    function stopScan(){ running=false; try{ codeReader?.reset(); }catch{} }
+
+    function onScanSuccess(val){
+      const col=targetCol||columns[0]?.colBody;
+      if(col) addValueToColumn(col,val);
+      navigator.clipboard?.writeText(val).catch(()=>{});
+      setTimeout(closeModal,300);
+      targetCol=null;
+    }
+
+    closeBtn.onclick=closeModal;
+    modal.onclick=e=>{ if(e.target===modal) closeModal(); };
+    addEventListener('pagehide', stopScan);
+    addEventListener('beforeunload', stopScan);
+  </script>
 </body>
 </html>
