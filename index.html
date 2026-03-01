@@ -8,12 +8,9 @@
 :root{
   --bg:#0e0f12;
   --fg:#e7e9ee;
-  --muted:#9aa1ad;
   --card:#14161c;
   --border:rgba(255,255,255,.12);
   --btn:#e6372a;
-  --btn-press:#c82f24;
-  --ring:#0a84ff;
   --danger:#ff4d4f;
   --tap:44px;
   --colw:320px;
@@ -22,16 +19,22 @@
 body{
   background:var(--bg);
   color:var(--fg);
-  min-height:100svh;
-  font:16px/1.5 ui-sans-serif,system-ui,-apple-system;
+  font:16px system-ui;
 }
+
 .wrap{max-width:1000px;margin:auto;padding:18px 4vw;display:flex;flex-direction:column;gap:12px}
 
-#landing{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0e0f12}
+#landing{
+position:fixed;inset:0;
+display:flex;align-items:center;justify-content:center;
+background:#0e0f12
+}
+
 .start{
-  width:240px;height:240px;border-radius:50%;
-  background:#e6372a;color:#fff;font-weight:900;font-size:32px;
-  border:none;cursor:pointer;
+width:240px;height:240px;border-radius:50%;
+background:#e6372a;color:#fff;
+font-size:32px;font-weight:900;
+border:none;cursor:pointer
 }
 
 #app{display:none}
@@ -39,108 +42,94 @@ body{
 .topbar{display:flex;justify-content:flex-end;gap:8px}
 
 .btn{
-  border:1px solid var(--border);
-  background:#1a1d25;
-  color:#fff;
-  padding:8px 12px;
-  border-radius:10px;
-  cursor:pointer;
+border:1px solid var(--border);
+background:#1a1d25;
+color:#fff;
+padding:8px 12px;
+border-radius:10px;
+cursor:pointer
 }
 
 .card{
-  background:#14161c;
-  border:1px solid var(--border);
-  border-radius:14px;
-  overflow:hidden;
+background:#14161c;
+border:1px solid var(--border);
+border-radius:14px;
+overflow:hidden
 }
 
 .thead,.tbody{
-  display:flex;
-  gap:8px;
-  padding:10px 12px;
-  overflow-x:auto;
+display:flex;
+gap:8px;
+padding:10px 12px;
+overflow-x:auto
 }
 
 .thead{border-bottom:1px solid var(--border)}
 
 .head-cell{
-  min-width:320px;
-  max-width:320px;
-  display:flex;
-  align-items:center;
-  gap:8px;
+min-width:320px;
+display:flex;
+align-items:center;
+gap:8px
 }
 
 .head-edit{
-  flex:1;
-  min-height:36px;
-  padding:6px 8px;
-  background:transparent;
-  color:#fff;
-  border:none;
-  outline:none;
-}
-
-.del-col,.add-col{
-  width:36px;height:36px;border-radius:10px;
-  display:grid;place-items:center;
-  background:#1a1d25;border:1px solid var(--border);
-  cursor:pointer;
+flex:1;
+background:transparent;
+color:#fff;
+border:none;
+outline:none
 }
 
 .col{
-  min-width:320px;
-  max-width:320px;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
+min-width:320px;
+display:flex;
+flex-direction:column;
+gap:8px
 }
 
 .trow{
-  display:grid;
-  grid-template-columns:1fr 44px;
-  gap:8px;
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:8px 10px;
+display:grid;
+grid-template-columns:1fr 44px;
+gap:8px;
+border:1px solid var(--border);
+border-radius:12px;
+padding:8px
 }
 
 .cell input{
-  width:100%;
-  background:transparent;
-  border:none;
-  color:#fff;
+width:100%;
+background:transparent;
+border:none;
+color:#fff
 }
 
 .clear-btn{
-  width:44px;height:44px;
-  border-radius:12px;
-  border:1px solid #ff4d4f;
-  background:transparent;
-  cursor:pointer;
+width:44px;height:44px;
+border-radius:12px;
+border:1px solid #ff4d4f;
+background:transparent;
+color:#ff4d4f;
+cursor:pointer
 }
 
-.placeholder .plus-full{
-  width:100%;
-  height:44px;
-  border-radius:10px;
-  border:1px dashed #3a3f4b;
-  background:#1a1d25;
-  color:#fff;
-  font-weight:800;
+.placeholder button{
+width:100%;
+height:44px;
+border-radius:10px;
+border:1px dashed #3a3f4b;
+background:#1a1d25;
+color:#fff;
+font-weight:800
 }
 
 .modal{
-  position:fixed;
-  inset:0;
-  display:none;
-  background:rgba(0,0,0,.55);
+position:fixed;inset:0;
+display:none;
+background:rgba(0,0,0,.55)
 }
 
-.stage{
-  background:#000;
-  height:54vh;
-}
+.stage{background:#000;height:54vh}
 </style>
 
 <body>
@@ -168,6 +157,7 @@ body{
 </div>
 
 <div class="modal" id="modal">
+
 <div style="width:min(92vw,520px);margin:auto;background:#12131a;border-radius:14px">
 
 <div style="display:flex;justify-content:flex-end;padding:10px">
@@ -183,6 +173,7 @@ Allow camera access to start scanning
 </div>
 
 </div>
+
 </div>
 
 <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
@@ -198,6 +189,9 @@ const app=$('app')
 
 const thead=$('thead')
 const tbody=$('tbody')
+
+const copyAllBtn=$('copyAll')
+const exportBtn=$('exportXlsx')
 
 const modal=$('modal')
 const video=$('video')
@@ -228,7 +222,6 @@ t.contentEditable=true
 t.textContent=title
 
 head.appendChild(t)
-
 thead.appendChild(head)
 
 const col=document.createElement('div')
@@ -239,6 +232,7 @@ tbody.appendChild(col)
 appendPlaceholder(col)
 
 columns.push({titleEl:t,colBody:col})
+
 }
 
 function appendPlaceholder(col){
@@ -247,7 +241,6 @@ const ph=document.createElement('div')
 ph.className='placeholder'
 
 const btn=document.createElement('button')
-btn.className='plus-full'
 btn.textContent='+ Scan & Add'
 
 btn.onclick=()=>{
@@ -257,6 +250,7 @@ openModalAndScan()
 
 ph.appendChild(btn)
 col.appendChild(ph)
+
 }
 
 function makeDataRow(val){
@@ -282,6 +276,7 @@ r.appendChild(c)
 r.appendChild(del)
 
 return r
+
 }
 
 function addValueToColumn(col,val){
@@ -300,17 +295,13 @@ rows[0].remove()
 }
 
 function openModalAndScan(){
-
 modal.style.display='flex'
 startScan()
-
 }
 
 function closeModal(){
-
 stopScan()
 modal.style.display='none'
-
 }
 
 async function startScan(){
@@ -319,18 +310,18 @@ if(scanning) return
 
 scanning=true
 
-reader = new ZXing.BrowserMultiFormatReader()
+reader=new ZXing.BrowserMultiFormatReader()
 
-const hints = new Map()
+const hints=new Map()
 hints.set(
-  ZXing.DecodeHintType.POSSIBLE_FORMATS,
-  [
-    ZXing.BarcodeFormat.CODE_128,
-    ZXing.BarcodeFormat.QR_CODE
-  ]
+ZXing.DecodeHintType.POSSIBLE_FORMATS,
+[
+ZXing.BarcodeFormat.CODE_128,
+ZXing.BarcodeFormat.QR_CODE
+]
 )
 
-reader.hints = hints
+reader.hints=hints
 
 await reader.decodeFromConstraints(
 {video:{facingMode:'environment'}},
@@ -348,7 +339,6 @@ const val=result.getText().trim()
 if(val){
 
 stopScan()
-
 onScanSuccess(val)
 
 }
@@ -406,7 +396,69 @@ if(e.target===modal)closeModal()
 addEventListener('pagehide',stopScan)
 addEventListener('beforeunload',stopScan)
 
+
+copyAllBtn.onclick=()=>{
+
+let text=''
+let total=0
+
+columns.forEach((c,i)=>{
+
+const title=(c.titleEl.innerText||`Col ${i+1}`).trim()
+
+const rows=[...c.colBody.querySelectorAll('.trow')]
+.map(r=>r.querySelector('input').value.trim())
+.filter(v=>v!=='')
+
+if(rows.length===0)return
+
+text+=`${title} (${rows.length})\n`
+
+rows.forEach(v=>{
+text+=v+'\n'
+total++
+})
+
+text+='\n'
+
+})
+
+text+=`TOTAL: ${total}`
+
+navigator.clipboard.writeText(text)
+
+}
+
+exportBtn.onclick=()=>{
+
+const headers=columns.map(c=>c.titleEl.innerText||'Column')
+
+const maxRows=Math.max(...columns.map(c=>c.colBody.querySelectorAll('.trow').length))
+
+const data=[headers]
+
+for(let i=0;i<maxRows;i++){
+
+const row=columns.map(c=>{
+const trs=c.colBody.querySelectorAll('.trow')
+return trs[i]?.querySelector('input').value||''
+})
+
+data.push(row)
+
+}
+
+const ws=XLSX.utils.aoa_to_sheet(data)
+
+const wb=XLSX.utils.book_new()
+
+XLSX.utils.book_append_sheet(wb,ws,'Sheet1')
+
+XLSX.writeFile(wb,'SmartScan.xlsx')
+
+}
+
 </script>
+
 </body>
 </html>
-
