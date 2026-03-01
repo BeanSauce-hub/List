@@ -319,15 +319,18 @@ if(scanning) return
 
 scanning=true
 
-reader=new ZXing.BrowserMultiFormatReader()
+reader = new ZXing.BrowserMultiFormatReader()
 
-const hints=new Map()
+const hints = new Map()
 hints.set(
-ZXing.DecodeHintType.POSSIBLE_FORMATS,
-[ZXing.BarcodeFormat.CODE_128]
+  ZXing.DecodeHintType.POSSIBLE_FORMATS,
+  [
+    ZXing.BarcodeFormat.CODE_128,
+    ZXing.BarcodeFormat.QR_CODE
+  ]
 )
 
-reader.hints=hints
+reader.hints = hints
 
 await reader.decodeFromConstraints(
 {video:{facingMode:'environment'}},
@@ -406,3 +409,4 @@ addEventListener('beforeunload',stopScan)
 </script>
 </body>
 </html>
+
