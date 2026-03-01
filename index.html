@@ -13,7 +13,6 @@
 --border:rgba(255,255,255,.12);
 --btn:#e6372a;
 --danger:#ff4d4f;
---tap:44px;
 --colw:320px;
 }
 
@@ -206,6 +205,16 @@ app.style.display="block"
 addColumn("Code")
 }
 
+function updateColumnCount(colObj){
+
+const count=colObj.colBody.querySelectorAll(".trow").length
+const baseTitle=colObj.titleEl.dataset.base||colObj.titleEl.innerText
+
+colObj.titleEl.dataset.base=baseTitle.replace(/\(\d+\)$/,'')
+
+colObj.titleEl.innerText=`${colObj.titleEl.dataset.base} (${count})`
+}
+
 function addColumn(title){
 
 const head=document.createElement("div")
@@ -214,7 +223,8 @@ head.className="head-cell"
 const edit=document.createElement("div")
 edit.className="head-edit"
 edit.contentEditable=true
-edit.textContent=title
+edit.innerText=title
+edit.dataset.base=title
 
 head.appendChild(edit)
 
@@ -244,7 +254,7 @@ openScanner()
 col.appendChild(btn)
 }
 
-function makeRow(val){
+function makeRow(val,colObj){
 
 const r=document.createElement("div")
 r.className="trow"
@@ -261,7 +271,10 @@ const del=document.createElement("button")
 del.className="clear-btn"
 del.textContent="x"
 
-del.onclick=()=>r.remove()
+del.onclick=()=>{
+r.remove()
+updateColumnCount(colObj)
+}
 
 r.appendChild(c)
 r.appendChild(del)
@@ -271,7 +284,9 @@ return r
 
 function addValueToColumn(col,val){
 
-const row=makeRow(val)
+const colObj=columns.find(c=>c.colBody===col)
+
+const row=makeRow(val,colObj)
 
 col.insertBefore(row,col.lastElementChild)
 
@@ -279,34 +294,46 @@ if(col.children.length>500){
 col.removeChild(col.children[0])
 }
 
+updateColumnCount(colObj)
+
 }
 
 copyAllBtn.onclick=()=>{
 
-const headers=columns.map(c=>c.titleEl.innerText)
+let text=""
+let total=0
 
-const maxRows=Math.max(...columns.map(c=>c.colBody.querySelectorAll(".trow").length))
+columns.forEach((col,i)=>{
 
-const rows=[]
-rows.push(headers.join("\t"))
+const title=(col.titleEl.dataset.base||`Col ${i+1}`).trim()
 
-for(let r=0;r<maxRows;r++){
+const rows=col.colBody.querySelectorAll(".trow")
 
-const row=columns.map(c=>{
-const trs=c.colBody.querySelectorAll(".trow")
-return trs[r]?.querySelector("input")?.value||""
+if(rows.length===0) return
+
+text+=`${title} (${rows.length})\n`
+
+rows.forEach(r=>{
+const val=r.querySelector("input")?.value||""
+if(val){
+text+=val+"\n"
+total++
+}
 })
 
-rows.push(row.join("\t"))
-}
+text+="\n"
 
-navigator.clipboard.writeText(rows.join("\n"))
+})
+
+text+=`TOTAL: ${total}`
+
+navigator.clipboard.writeText(text)
 
 }
 
 exportBtn.onclick=()=>{
 
-const headers=columns.map(c=>c.titleEl.innerText)
+const headers=columns.map(c=>c.titleEl.dataset.base)
 
 const maxRows=Math.max(...columns.map(c=>c.colBody.querySelectorAll(".trow").length))
 
@@ -384,7 +411,6 @@ stream.getTracks().forEach(t=>t.stop())
 }
 
 video.srcObject=null
-
 codeReader=null
 
 }catch{}
