@@ -1,1189 +1,756 @@
 <!doctype html>
 <html lang="en">
+<head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>SmartScan</title>
+<title>移动扫描宝</title>
 
 <style>
 :root{
-
---bg:#f2f3f7;
-
---card:#ffffff;
-
---text:#1d1d1f;
---muted:#6e6e73;
-
---border:rgba(0,0,0,.06);
-
---accent:#0a84ff;
---danger:#ff3b30;
---success:#30d158;
-
---radius:16px;
---colw:260px;
-
-}
-
-/* RESET */
-
-*{
-box-sizing:border-box;
-margin:0;
-padding:0;
-}
-
-body{
-
-background:var(--bg);
-
-font-family:
-system-ui,
--apple-system,
-SF Pro Text,
-Inter,
-Segoe UI,
-Roboto,
-sans-serif;
-
-color:var(--text);
-
-font-size:16px;
-}
-
-/* APP WRAP */
-
-.wrap{
-
-padding:18px 16px 28px;
-
-display:flex;
-flex-direction:column;
-
-gap:16px;
-}
-
-/* START SCREEN */
-
-#landing{
-
-display:flex;
-justify-content:center;
-align-items:center;
-
-height:65vh;
-}
-
-.start{
-
-width:170px;
-height:170px;
-
-border-radius:999px;
-
-background:linear-gradient(
-180deg,
-#0a84ff,
-#0071ff
-);
-
-color:white;
-
-font-size:26px;
-font-weight:600;
-
-border:none;
-
-box-shadow:
-0 18px 40px rgba(10,132,255,.25);
-
-cursor:pointer;
-
-transition:.2s;
-}
-
-.start:active{
-transform:scale(.95);
-}
-
-/* TOPBAR */
-
-.topbar{
-
-display:flex;
-justify-content:space-between;
-gap:10px;
-}
-
-.btn{
-
-flex:1;
-
-background:white;
-
-border:none;
-
-padding:12px;
-
-border-radius:12px;
-
-font-weight:600;
-
-font-size:15px;
-
-box-shadow:
-0 4px 12px rgba(0,0,0,.05);
-
-cursor:pointer;
-}
-
-.btn.success{
-
-background:var(--success);
-color:white;
-}
-
-/* MAIN CARD */
-
-.card{
-
-background:transparent;
-}
-
-/* HEADER */
-
-.thead{
-
-display:flex;
-
-gap:12px;
-
-padding:6px 4px;
-
-font-weight:600;
-
-color:var(--muted);
-}
-
-/* BODY */
-
-.tbody{
-
-display:flex;
-
-gap:12px;
-
-overflow-x:auto;
-
-padding:4px;
-}
-
-/* COLUMN */
-
-.col{
-
-min-width:var(--colw);
-
-display:flex;
-flex-direction:column;
-
-gap:10px;
-}
-
-/* SCAN BUTTON */
-
-.scan-btn{
-
-height:48px;
-
-border-radius:14px;
-
-background:var(--accent);
-
-color:white;
-
-border:none;
-
-font-weight:600;
-
-font-size:15px;
-
-box-shadow:
-0 6px 18px rgba(10,132,255,.25);
-
-cursor:pointer;
-}
-
-/* ROW */
-
-.trow{
-
-display:grid;
-
-grid-template-columns:1fr 36px;
-
-gap:10px;
-
-padding:12px;
-
-border-radius:14px;
-
-background:var(--card);
-
-box-shadow:
-0 4px 10px rgba(0,0,0,.04);
-
-transition:.2s;
-}
-
-.trow.flash{
-
-box-shadow:
-0 0 0 2px rgba(48,209,88,.35);
-}
-
-/* INPUT */
-
-.cell input{
-
-width:100%;
-
-background:transparent;
-
-border:none;
-
-outline:none;
-
-font-size:15px;
-}
-
-/* DELETE */
-
-.clear-btn{
-
-background:none;
-
-border:none;
-
-color:var(--danger);
-
-font-size:16px;
-
-font-weight:700;
-}
-
-/* MODAL */
-
-.modal{
-
-position:fixed;
-inset:0;
-
-display:none;
-
-align-items:center;
-justify-content:center;
-
-background:rgba(0,0,0,.25);
-
-backdrop-filter:blur(6px);
-}
-
-.stage{
-
-height:50vh;
-background:black;
-}
-
-/* SCROLL */
-
-::-webkit-scrollbar{
-display:none;
-}
-</style>
-
-<body>
-
-<div class="wrap">
-
-<section id="landing">
-<button class="start" id="startBtn">START</button>
-</section>
-
-<section id="app">
-
-<div class="topbar">
-<button class="btn" id="copyAll">Copy All</button>
-<button class="btn" id="exportXlsx">Export Sheet</button>
-</div>
-
-<div class="card">
-<div class="thead" id="thead"></div>
-<div class="tbody" id="tbody"></div>
-</div>
-
-</section>
-
-</div>
-
-<div class="modal" id="modal">
-
-<div style="width:min(92vw,520px);margin:auto;background:#12131a;border-radius:14px">
-
-<div style="display:flex;justify-content:flex-end;padding:10px">
-<button class="btn" id="close">Close</button>
-</div>
-
-<div class="stage">
-<video id="video" playsinline muted></video>
-</div>
-
-<div id="hint">Allow camera access</div>
-
-</div>
-
-</div>
-
-<script src="https://unpkg.com/@zxing/library@0.20.0"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
-<script>
-
-const $=id=>document.getElementById(id)
-
-const startBtn=$('startBtn')
-const landing=$('landing')
-const app=$('app')
-
-const thead=$('thead')
-const tbody=$('tbody')
-
-const copyBtn=$('copyAll')
-const exportBtn=$('exportXlsx')
-
-const modal=$('modal')
-const video=$('video')
-const hint=$('hint')
-const closeBtn=$('close')
-
-let reader=null
-let controls=null
-let scanning=false
-let targetCol=null
-let scanLock=false
-
-let appStarted=false
-
-const columns=[]
-
-startBtn.onclick=()=>{
-
-if(appStarted)return
-
-appStarted=true
-
-landing.style.display='none'
-
-app.style.display='block'
-
-addColumn('Code')
-
-}
-
-function addColumn(title){
-
-const head=document.createElement('div')
-head.className='head-cell'
-
-const t=document.createElement('div')
-t.className='head-edit'
-t.contentEditable=true
-t.textContent=title
-
-head.appendChild(t)
-thead.appendChild(head)
-
-const col=document.createElement('div')
-col.className='col'
-
-tbody.appendChild(col)
-
-appendPlaceholder(col)
-
-columns.push({titleEl:t,colBody:col})
-
-}
-
-function appendPlaceholder(col){
-
-const ph=document.createElement('div')
-ph.className='placeholder'
-
-const btn=document.createElement('button')
-btn.className='scan-btn'
-btn.textContent='📷 Scan'
-
-btn.onclick=()=>{
-targetCol=col
-openScan()
-}
-
-ph.appendChild(btn)
-col.appendChild(ph)
-
-}
-
-function makeRow(val){
-
-const r=document.createElement('div')
-r.className='trow'
-
-const c=document.createElement('div')
-c.className='cell'
-
-const input=document.createElement('input')
-input.value=val
-
-c.appendChild(input)
-
-const del=document.createElement('button')
-del.className='clear-btn'
-del.textContent='X'
-
-del.onclick=()=>r.remove()
-
-r.appendChild(c)
-r.appendChild(del)
-
-return r
-
-}
-
-function getRows(col){
-return [...col.querySelectorAll('.trow')]
-}
-
-function addValue(col,val){
-
-const row=makeRow(val)
-
-const ph=col.querySelector('.placeholder')
-
-ph.insertAdjacentElement('afterend',row)
-
-const rows=getRows(col)
-
-if(rows.length>500){
-rows[rows.length-1].remove()
-}
-
-row.classList.add('flash')
-
-setTimeout(()=>row.classList.remove('flash'),700)
-
-row.scrollIntoView({behavior:'smooth',block:'nearest'})
-
-}
-
-function openScan(){
-modal.style.display='flex'
-startScan()
-}
-
-function closeModal(){
-stopScan()
-modal.style.display='none'
-}
-
-async function startScan(){
-
-if(scanning)return
-
-scanning=true
-scanLock=false
-
-hint.textContent='Scanning...'
-
-reader=new ZXing.BrowserMultiFormatReader()
-
-reader.timeBetweenDecodingAttempts=120
-
-await reader.decodeFromConstraints(
-{video:{facingMode:'environment'}},
-video,
-(result,err,c)=>{
-
-controls=c
-
-if(!scanning)return
-if(!result)return
-if(scanLock)return
-
-const val=result.getText().trim()
-
-if(!val)return
-
-scanLock=true
-
-stopScan()
-
-onScan(val)
-
-})
-}
-
-function stopScan(){
-
-scanning=false
-
-try{controls?.stop()}catch{}
-
-try{
-const stream=video.srcObject
-if(stream)stream.getTracks().forEach(t=>t.stop())
-}catch{}
-
-video.srcObject=null
-
-try{reader?.reset()}catch{}
-
-reader=null
-
-}
-
-function onScan(val){
-
-const col=targetCol||columns[0].colBody
-
-addValue(col,val)
-
-navigator.clipboard?.writeText(val).catch(()=>{})
-
-setTimeout(closeModal,150)
-
-targetCol=null
-
-}
-
-closeBtn.onclick=closeModal
-
-modal.onclick=e=>{
-if(e.target===modal)closeModal()
-}
-
-copyBtn.onclick=()=>{
-
-let text=''
-let total=0
-
-columns.forEach((c,i)=>{
-
-const title=c.titleEl.innerText.trim()
-
-const rows=getRows(c.colBody)
-.map(r=>r.querySelector('input').value.trim())
-.filter(v=>v)
-
-if(!rows.length)return
-
-text+=`${title} (${rows.length})\n`
-
-rows.forEach(v=>{
-text+=v+'\n'
-total++
-})
-
-text+='\n'
-
-})
-
-text+=`TOTAL: ${total}`
-
-navigator.clipboard.writeText(text).then(()=>{
-
-copyBtn.classList.add('success')
-copyBtn.textContent='✔ Copied'
-
-setTimeout(()=>{
-copyBtn.classList.remove('success')
-copyBtn.textContent='Copy All'
-},1200)
-
-})
-
-}
-
-exportBtn.onclick=()=>{
-
-const headers=columns.map(c=>c.titleEl.innerText||'Column')
-
-const maxRows=Math.max(0,...columns.map(c=>getRows(c.colBody).length))
-
-const data=[headers]
-
-for(let i=0;i<maxRows;i++){
-
-data.push(columns.map(c=>{
-const r=getRows(c.colBody)
-return r[i]?.querySelector('input').value||''
-}))
-
-}
-
-const ws=XLSX.utils.aoa_to_sheet(data)
-
-const wb=XLSX.utils.book_new()
-
-XLSX.utils.book_append_sheet(wb,ws,'Sheet1')
-
-const d=new Date().toISOString().slice(0,10)
-
-XLSX.writeFile(wb,`SmartScan_${d}.xlsx`)
-
-}
-
-</script>
-
-</body>
-</html><!doctype html>
-<html lang="en">
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>SmartScan</title>
-
-<style>
-:root{
---bg:#0e0f12;
---fg:#e7e9ee;
---card:#14161c;
---border:rgba(255,255,255,.12);
---btn:#e6372a;
---danger:#ff4d4f;
---ok:#1f8f3a;
---okGlow:rgba(31,143,58,.25);
---colw:320px;
+  --bg1:#f6f7fb;
+  --bg2:#eef2f8;
+  --text:#1d1d1f;
+  --muted:#6e6e73;
+  --line:rgba(0,0,0,.07);
+  --glass:rgba(255,255,255,.56);
+  --glass-strong:rgba(255,255,255,.72);
+  --shadow:0 10px 30px rgba(28,39,58,.10);
+  --shadow-soft:0 6px 18px rgba(28,39,58,.08);
+  --blue1:#0a84ff;
+  --blue2:#5ac8fa;
+  --red1:#ff5f6d;
+  --red2:#ff7a59;
+  --success:#30d158;
+  --danger:#ff3b30;
+  --radius:18px;
+  --safe-bottom:calc(env(safe-area-inset-bottom, 0px) + 16px);
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
 
 body{
-background:var(--bg);
-color:var(--fg);
-font:16px system-ui;
+  font-family:system-ui,-apple-system,"SF Pro Text","Segoe UI",Roboto,Arial,sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(80vw 50vh at 10% 0%, rgba(255,95,109,.18), transparent 55%),
+    radial-gradient(70vw 50vh at 100% 10%, rgba(10,132,255,.20), transparent 55%),
+    linear-gradient(180deg,var(--bg1),var(--bg2));
+  overflow:hidden;
 }
 
-.wrap{
-max-width:1000px;
-margin:auto;
-padding:20px 4vw;
-display:flex;
-flex-direction:column;
-gap:12px
+button,input{
+  font:inherit;
+  -webkit-tap-highlight-color:transparent;
 }
 
-#landing{
-position:fixed;
-inset:0;
-display:flex;
-align-items:center;
-justify-content:center;
-background:#0e0f12;
-z-index:20
+.app{
+  height:100dvh;
+  display:flex;
+  flex-direction:column;
 }
 
-.start{
-width:240px;
-height:240px;
-border-radius:50%;
-background:#e6372a;
-color:#fff;
-font-size:32px;
-font-weight:900;
-border:none;
-cursor:pointer
+.header{
+  padding:calc(env(safe-area-inset-top, 0px) + 14px) 16px 10px;
+  position:relative;
+  z-index:5;
 }
 
-#app{display:none}
-
-.topbar{
-display:flex;
-justify-content:flex-end;
-gap:8px
+.glass-panel{
+  background:var(--glass);
+  backdrop-filter:blur(18px) saturate(140%);
+  -webkit-backdrop-filter:blur(18px) saturate(140%);
+  border:1px solid rgba(255,255,255,.42);
+  box-shadow:var(--shadow);
 }
 
-.btn{
-border:1px solid var(--border);
-background:#1a1d25;
-color:#fff;
-padding:8px 12px;
-border-radius:10px;
-cursor:pointer
+.hero{
+  border-radius:24px;
+  padding:14px 14px 12px;
 }
 
-.btn.success{
-background:var(--ok);
-border-color:var(--ok)
+.topline{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
 }
 
-.card{
-background:#14161c;
-border:1px solid var(--border);
-border-radius:14px;
-overflow:hidden
+.brand{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
 }
 
-.thead,.tbody{
-display:flex;
-gap:8px;
-padding:10px 12px;
-overflow-x:auto
+.title{
+  font-size:22px;
+  font-weight:800;
+  letter-spacing:-.02em;
 }
 
-.thead{
-border-bottom:1px solid var(--border)
+.subtitle{
+  font-size:13px;
+  color:var(--muted);
 }
 
-.head-cell{
-min-width:var(--colw);
-display:flex;
-align-items:center
+.count-pill{
+  min-width:74px;
+  height:38px;
+  border-radius:999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 14px;
+  background:rgba(255,255,255,.62);
+  border:1px solid rgba(255,255,255,.5);
+  box-shadow:var(--shadow-soft);
+  font-size:14px;
+  font-weight:700;
 }
 
-.head-edit{
-flex:1;
-background:transparent;
-color:#fff;
-border:none;
-outline:none;
-font-weight:700
+.column-chip{
+  margin-top:12px;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  max-width:100%;
+  padding:10px 14px;
+  border-radius:999px;
+  background:rgba(255,255,255,.62);
+  border:1px solid rgba(255,255,255,.48);
+  box-shadow:var(--shadow-soft);
 }
 
-.col{
-min-width:var(--colw);
-display:flex;
-flex-direction:column;
-gap:8px
+.column-chip span{
+  font-size:15px;
+  font-weight:700;
 }
 
-.placeholder{
-position:sticky;
-top:0;
-z-index:2;
-background:#14161c
+.column-name{
+  outline:none;
+  border:none;
+  background:transparent;
+  min-width:0;
+  max-width:56vw;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
-.scan-btn{
-width:100%;
-height:44px;
-border-radius:10px;
-border:1px solid #2c3240;
-background:#1a1d25;
-color:#fff;
-font-weight:800;
-cursor:pointer
+.list-wrap{
+  flex:1;
+  min-height:0;
+  padding:8px 16px calc(164px + var(--safe-bottom));
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  scroll-behavior:smooth;
+}
+
+.list-wrap::-webkit-scrollbar{display:none}
+
+.list{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.empty-state{
+  padding:18px 16px;
+  border-radius:22px;
+  background:rgba(255,255,255,.40);
+  backdrop-filter:blur(14px) saturate(130%);
+  -webkit-backdrop-filter:blur(14px) saturate(130%);
+  border:1px solid rgba(255,255,255,.38);
+  box-shadow:var(--shadow-soft);
+}
+
+.empty-title{
+  font-size:17px;
+  font-weight:800;
+  margin-bottom:4px;
+}
+
+.empty-text{
+  font-size:14px;
+  color:var(--muted);
+  line-height:1.45;
 }
 
 .trow{
-display:grid;
-grid-template-columns:1fr 44px;
-gap:8px;
-border:1px solid var(--border);
-border-radius:12px;
-padding:8px;
-transition:.25s
+  display:grid;
+  grid-template-columns:1fr 42px;
+  gap:10px;
+  align-items:center;
+  padding:12px 12px 12px 14px;
+  border-radius:20px;
+  background:var(--glass-strong);
+  backdrop-filter:blur(16px) saturate(145%);
+  -webkit-backdrop-filter:blur(16px) saturate(145%);
+  border:1px solid rgba(255,255,255,.46);
+  box-shadow:var(--shadow-soft);
+  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
 }
 
 .trow.flash{
-border-color:var(--ok);
-box-shadow:0 0 0 3px var(--okGlow)
+  border-color:rgba(48,209,88,.85);
+  box-shadow:
+    0 0 0 3px rgba(48,209,88,.18),
+    0 10px 24px rgba(48,209,88,.10);
+  transform:translateY(-1px);
+}
+
+.cell{
+  min-width:0;
 }
 
 .cell input{
-width:100%;
-background:transparent;
-border:none;
-color:#fff
+  width:100%;
+  border:none;
+  outline:none;
+  background:transparent;
+  color:var(--text);
+  font-size:16px;
+  font-weight:650;
+  letter-spacing:.01em;
 }
 
 .clear-btn{
-width:44px;
-height:44px;
-border-radius:12px;
-border:1px solid #ff4d4f;
-background:transparent;
-color:#ff4d4f;
-cursor:pointer
+  width:42px;
+  height:42px;
+  border:none;
+  border-radius:14px;
+  background:rgba(255,59,48,.10);
+  color:var(--danger);
+  font-size:18px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.clear-btn:active{
+  transform:scale(.96);
+}
+
+.floating{
+  position:fixed;
+  left:16px;
+  right:16px;
+  bottom:var(--safe-bottom);
+  z-index:20;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.scan-btn{
+  height:62px;
+  border:none;
+  border-radius:22px;
+  color:#fff;
+  font-size:18px;
+  font-weight:800;
+  letter-spacing:.01em;
+  background:linear-gradient(135deg,var(--blue1),var(--blue2));
+  box-shadow:0 16px 34px rgba(10,132,255,.30);
+  cursor:pointer;
+}
+
+.scan-btn:active{
+  transform:translateY(1px) scale(.992);
+}
+
+.scan-btn.scanning{
+  background:linear-gradient(135deg,#4f8cff,#77d4ff);
+}
+
+.actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.btn{
+  height:48px;
+  border:none;
+  border-radius:18px;
+  background:var(--glass);
+  backdrop-filter:blur(16px) saturate(145%);
+  -webkit-backdrop-filter:blur(16px) saturate(145%);
+  border:1px solid rgba(255,255,255,.44);
+  box-shadow:var(--shadow-soft);
+  color:var(--text);
+  font-size:15px;
+  font-weight:750;
+  cursor:pointer;
+}
+
+.btn.success{
+  background:rgba(48,209,88,.92);
+  color:#fff;
+  border-color:rgba(48,209,88,.94);
+}
+
+.btn:active{
+  transform:translateY(1px) scale(.992);
 }
 
 .modal{
-position:fixed;
-inset:0;
-display:none;
-align-items:center;
-justify-content:center;
-background:rgba(0,0,0,.6)
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:flex-end;
+  justify-content:center;
+  background:rgba(22,24,31,.22);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  z-index:40;
+}
+
+.sheet{
+  width:100%;
+  max-width:680px;
+  border-radius:28px 28px 0 0;
+  overflow:hidden;
+  background:rgba(255,255,255,.88);
+  backdrop-filter:blur(22px) saturate(145%);
+  -webkit-backdrop-filter:blur(22px) saturate(145%);
+  border-top:1px solid rgba(255,255,255,.55);
+  box-shadow:0 -12px 40px rgba(18,25,38,.14);
+}
+
+.sheet-top{
+  padding:10px 16px 12px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.grabber{
+  width:44px;
+  height:5px;
+  border-radius:999px;
+  background:rgba(60,60,67,.22);
+  align-self:center;
+}
+
+.sheet-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.sheet-title{
+  font-size:18px;
+  font-weight:800;
+}
+
+.close-btn{
+  min-width:74px;
+  height:38px;
+  padding:0 14px;
+  border:none;
+  border-radius:999px;
+  background:rgba(255,255,255,.82);
+  border:1px solid var(--line);
+  font-weight:700;
+  cursor:pointer;
 }
 
 .stage{
-background:#000;
-height:54vh
+  height:48dvh;
+  background:#000;
 }
 
 #video{
-width:100%;
-height:100%;
-object-fit:cover
+  width:100%;
+  height:100%;
+  object-fit:cover;
 }
 
 #hint{
-padding:10px;
-text-align:center;
-color:#aaa
+  padding:12px 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
+  text-align:center;
+  color:var(--muted);
+  font-size:14px;
+  font-weight:600;
+}
+
+#app{display:none}
+#landing{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+}
+
+.start{
+  width:184px;
+  height:184px;
+  border:none;
+  border-radius:999px;
+  color:#fff;
+  font-size:28px;
+  font-weight:850;
+  letter-spacing:.01em;
+  background:linear-gradient(135deg,var(--red1),var(--red2));
+  box-shadow:0 20px 46px rgba(255,95,109,.28);
+  cursor:pointer;
+}
+
+.start:active{
+  transform:scale(.97);
+}
+
+@media (min-width: 760px){
+  .header,.list-wrap,.floating{max-width:760px;margin-left:auto;margin-right:auto}
 }
 </style>
-
+</head>
 <body>
 
-<div class="wrap">
+<div class="app">
 
-<section id="landing">
-<button class="start" id="startBtn">START</button>
-</section>
+  <section id="landing">
+    <button class="start" id="startBtn">START</button>
+  </section>
 
-<section id="app">
+  <section id="app">
+    <header class="header">
+      <div class="hero glass-panel">
+        <div class="topline">
+          <div class="brand">
+            <div class="title">SmartScan</div>
+          </div>
+          <div class="count-pill" id="countPill">0</div>
+        </div>
 
-<div class="topbar">
-<button class="btn" id="copyAll">Copy All</button>
-<button class="btn" id="exportXlsx">Export Sheet</button>
-</div>
+        <div class="column-chip">
+          <span id="columnName" class="column-name" contenteditable="true" spellcheck="false">Column Name</span>
+        </div>
+      </div>
+    </header>
 
-<div class="card">
-<div class="thead" id="thead"></div>
-<div class="tbody" id="tbody"></div>
-</div>
+    <main class="list-wrap" id="listWrap">
+      <div class="list" id="list"></div>
 
-</section>
+      <div class="empty-state" id="emptyState">
+        <div class="empty-title">Ready to scan</div>
+        <div class="empty-text">Tap the large Scan button below. New tracking numbers will appear here and stay scrollable while the action buttons remain floating.</div>
+      </div>
+    </main>
+
+    <div class="floating">
+      <button class="scan-btn" id="scanBtn">SCAN</button>
+
+      <div class="actions">
+        <button class="btn" id="copyAll">Copy</button>
+        <button class="btn" id="exportXlsx">Export</button>
+      </div>
+    </div>
+  </section>
 
 </div>
 
 <div class="modal" id="modal">
+  <div class="sheet">
+    <div class="sheet-top">
+      <div class="grabber"></div>
+      <div class="sheet-head">
+        <div class="sheet-title">Scan package</div>
+        <button class="close-btn" id="close">Close</button>
+      </div>
+    </div>
 
-<div style="width:min(92vw,520px);margin:auto;background:#12131a;border-radius:14px">
+    <div class="stage">
+      <video id="video" playsinline muted></video>
+    </div>
 
-<div style="display:flex;justify-content:flex-end;padding:10px">
-<button class="btn" id="close">Close</button>
-</div>
-
-<div class="stage">
-<video id="video" playsinline muted></video>
-</div>
-
-<div id="hint">Allow camera access</div>
-
-</div>
-
+    <div id="hint">Allow camera access to start scanning</div>
+  </div>
 </div>
 
 <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
+const $ = id => document.getElementById(id)
 
-const $=id=>document.getElementById(id)
+const startBtn = $('startBtn')
+const landing = $('landing')
+const app = $('app')
 
-const startBtn=$('startBtn')
-const landing=$('landing')
-const app=$('app')
+const list = $('list')
+const listWrap = $('listWrap')
+const emptyState = $('emptyState')
 
-const thead=$('thead')
-const tbody=$('tbody')
+const scanBtn = $('scanBtn')
+const copyBtn = $('copyAll')
+const exportBtn = $('exportXlsx')
 
-const copyBtn=$('copyAll')
-const exportBtn=$('exportXlsx')
+const modal = $('modal')
+const video = $('video')
+const hint = $('hint')
+const closeBtn = $('close')
 
-const modal=$('modal')
-const video=$('video')
-const hint=$('hint')
-const closeBtn=$('close')
+const countPill = $('countPill')
+const columnName = $('columnName')
 
-let reader=null
-let controls=null
-let scanning=false
-let targetCol=null
-let scanLock=false
+let reader = null
+let controls = null
+let scanning = false
+let scanLock = false
+let appStarted = false
 
-let appStarted=false
+const rowsData = []
+const seen = new Set()
 
-const columns=[]
-
-startBtn.onclick=()=>{
-
-if(appStarted)return
-
-appStarted=true
-
-landing.style.display='none'
-
-app.style.display='block'
-
-addColumn('Code')
-
+startBtn.onclick = () => {
+  if(appStarted) return
+  appStarted = true
+  landing.style.display = 'none'
+  app.style.display = 'block'
+  updateCount()
 }
 
-function addColumn(title){
-
-const head=document.createElement('div')
-head.className='head-cell'
-
-const t=document.createElement('div')
-t.className='head-edit'
-t.contentEditable=true
-t.textContent=title
-
-head.appendChild(t)
-thead.appendChild(head)
-
-const col=document.createElement('div')
-col.className='col'
-
-tbody.appendChild(col)
-
-appendPlaceholder(col)
-
-columns.push({titleEl:t,colBody:col})
-
+function normalizeValue(v){
+  return (v || '').trim()
 }
 
-function appendPlaceholder(col){
-
-const ph=document.createElement('div')
-ph.className='placeholder'
-
-const btn=document.createElement('button')
-btn.className='scan-btn'
-btn.textContent='📷 Scan'
-
-btn.onclick=()=>{
-targetCol=col
-openScan()
+function escapeSheetName(name){
+  return normalizeValue(name) || 'Column Name'
 }
 
-ph.appendChild(btn)
-col.appendChild(ph)
-
+function updateCount(){
+  countPill.textContent = String(rowsData.length)
+  emptyState.style.display = rowsData.length ? 'none' : 'block'
 }
 
 function makeRow(val){
+  const r = document.createElement('div')
+  r.className = 'trow'
 
-const r=document.createElement('div')
-r.className='trow'
+  const c = document.createElement('div')
+  c.className = 'cell'
 
-const c=document.createElement('div')
-c.className='cell'
+  const input = document.createElement('input')
+  input.value = val
+  input.autocomplete = 'off'
+  input.autocapitalize = 'off'
+  input.spellcheck = false
 
-const input=document.createElement('input')
-input.value=val
+  c.appendChild(input)
 
-c.appendChild(input)
+  const del = document.createElement('button')
+  del.className = 'clear-btn'
+  del.textContent = '×'
 
-const del=document.createElement('button')
-del.className='clear-btn'
-del.textContent='X'
+  del.onclick = () => {
+    const index = rowsData.findIndex(item => item.rowEl === r)
+    if(index >= 0){
+      seen.delete(rowsData[index].value)
+      rowsData.splice(index, 1)
+    }
+    r.remove()
+    updateCount()
+  }
 
-del.onclick=()=>r.remove()
+  input.addEventListener('change', () => {
+    const newVal = normalizeValue(input.value)
+    const item = rowsData.find(x => x.rowEl === r)
+    if(!item) return
 
-r.appendChild(c)
-r.appendChild(del)
+    if(!newVal){
+      seen.delete(item.value)
+      const index = rowsData.indexOf(item)
+      if(index >= 0) rowsData.splice(index, 1)
+      r.remove()
+      updateCount()
+      return
+    }
 
-return r
+    if(newVal !== item.value && seen.has(newVal)){
+      input.value = item.value
+      return
+    }
 
+    seen.delete(item.value)
+    item.value = newVal
+    seen.add(newVal)
+  })
+
+  r.appendChild(c)
+  r.appendChild(del)
+
+  return { rowEl:r, inputEl:input }
 }
 
-function getRows(col){
-return [...col.querySelectorAll('.trow')]
+function addValue(val){
+  const clean = normalizeValue(val)
+  if(!clean) return
+  if(seen.has(clean)) return
+
+  const made = makeRow(clean)
+  list.prepend(made.rowEl)
+
+  rowsData.unshift({
+    value: clean,
+    rowEl: made.rowEl,
+    inputEl: made.inputEl
+  })
+
+  seen.add(clean)
+  updateCount()
+
+  made.rowEl.classList.add('flash')
+  setTimeout(() => made.rowEl.classList.remove('flash'), 850)
+
+  navigator.vibrate?.(30)
 }
 
-function addValue(col,val){
-
-const row=makeRow(val)
-
-const ph=col.querySelector('.placeholder')
-
-ph.insertAdjacentElement('afterend',row)
-
-const rows=getRows(col)
-
-if(rows.length>500){
-rows[rows.length-1].remove()
-}
-
-row.classList.add('flash')
-
-setTimeout(()=>row.classList.remove('flash'),700)
-
-row.scrollIntoView({behavior:'smooth',block:'nearest'})
-
+function getCurrentValues(){
+  return rowsData
+    .map(item => normalizeValue(item.inputEl.value))
+    .filter(Boolean)
 }
 
 function openScan(){
-modal.style.display='flex'
-startScan()
+  modal.style.display = 'flex'
+  startScan()
 }
 
 function closeModal(){
-stopScan()
-modal.style.display='none'
+  stopScan()
+  modal.style.display = 'none'
+  hint.textContent = 'Allow camera access to start scanning'
+  scanBtn.classList.remove('scanning')
+  scanBtn.textContent = '📷 Scan'
 }
 
 async function startScan(){
+  if(scanning) return
 
-if(scanning)return
+  scanning = true
+  scanLock = false
+  hint.textContent = 'Scanning...'
+  scanBtn.classList.add('scanning')
+  scanBtn.textContent = 'Scanning...'
 
-scanning=true
-scanLock=false
+  try{
+    reader = new ZXing.BrowserMultiFormatReader()
+    reader.timeBetweenDecodingAttempts = 120
 
-hint.textContent='Scanning...'
+    await reader.decodeFromConstraints(
+      {
+        video:{
+          facingMode:'environment',
+          width:{ ideal:1280 },
+          height:{ ideal:720 }
+        }
+      },
+      video,
+      (result, err, c) => {
+        controls = c
 
-reader=new ZXing.BrowserMultiFormatReader()
+        if(!scanning) return
+        if(!result) return
+        if(scanLock) return
 
-reader.timeBetweenDecodingAttempts=120
+        const val = normalizeValue(result.getText())
+        if(!val) return
 
-await reader.decodeFromConstraints(
-{video:{facingMode:'environment'}},
-video,
-(result,err,c)=>{
-
-controls=c
-
-if(!scanning)return
-if(!result)return
-if(scanLock)return
-
-const val=result.getText().trim()
-
-if(!val)return
-
-scanLock=true
-
-stopScan()
-
-onScan(val)
-
-})
+        scanLock = true
+        hint.textContent = 'Captured'
+        stopScan()
+        onScan(val)
+      }
+    )
+  }catch(e){
+    hint.textContent = 'Camera failed to start'
+    scanning = false
+    scanBtn.classList.remove('scanning')
+    scanBtn.textContent = '📷 Scan'
+  }
 }
 
 function stopScan(){
+  scanning = false
 
-scanning=false
+  try{ controls?.stop() }catch{}
+  controls = null
 
-try{controls?.stop()}catch{}
+  try{ video.pause() }catch{}
 
-try{
-const stream=video.srcObject
-if(stream)stream.getTracks().forEach(t=>t.stop())
-}catch{}
+  try{
+    const stream = video.srcObject
+    if(stream) stream.getTracks().forEach(t => t.stop())
+  }catch{}
 
-video.srcObject=null
+  video.srcObject = null
 
-try{reader?.reset()}catch{}
-
-reader=null
-
+  try{ reader?.reset() }catch{}
+  reader = null
 }
 
 function onScan(val){
+  addValue(val)
+  navigator.clipboard?.writeText(val).catch(() => {})
 
-const col=targetCol||columns[0].colBody
-
-addValue(col,val)
-
-navigator.clipboard?.writeText(val).catch(()=>{})
-
-setTimeout(closeModal,150)
-
-targetCol=null
-
+  setTimeout(() => {
+    closeModal()
+  }, 180)
 }
 
-closeBtn.onclick=closeModal
+scanBtn.onclick = openScan
+closeBtn.onclick = closeModal
 
-modal.onclick=e=>{
-if(e.target===modal)closeModal()
+modal.onclick = e => {
+  if(e.target === modal) closeModal()
 }
 
-copyBtn.onclick=()=>{
+copyBtn.onclick = () => {
+  const title = escapeSheetName(columnName.innerText)
+  const values = getCurrentValues()
 
-let text=''
-let total=0
+  let text = ''
+  if(values.length){
+    text += `${title} (${values.length})\n`
+    values.forEach(v => text += v + '\n')
+    text += `\nTOTAL: ${values.length}`
+  }else{
+    text = `${title} (0)\n\nTOTAL: 0`
+  }
 
-columns.forEach((c,i)=>{
-
-const title=c.titleEl.innerText.trim()
-
-const rows=getRows(c.colBody)
-.map(r=>r.querySelector('input').value.trim())
-.filter(v=>v)
-
-if(!rows.length)return
-
-text+=`${title} (${rows.length})\n`
-
-rows.forEach(v=>{
-text+=v+'\n'
-total++
-})
-
-text+='\n'
-
-})
-
-text+=`TOTAL: ${total}`
-
-navigator.clipboard.writeText(text).then(()=>{
-
-copyBtn.classList.add('success')
-copyBtn.textContent='✔ Copied'
-
-setTimeout(()=>{
-copyBtn.classList.remove('success')
-copyBtn.textContent='Copy All'
-},1200)
-
-})
-
+  navigator.clipboard?.writeText(text).then(() => {
+    copyBtn.classList.add('success')
+    copyBtn.textContent = 'Copied'
+    setTimeout(() => {
+      copyBtn.classList.remove('success')
+      copyBtn.textContent = 'Copy'
+    }, 1200)
+  }).catch(() => {})
 }
 
-exportBtn.onclick=()=>{
+exportBtn.onclick = () => {
+  const title = escapeSheetName(columnName.innerText)
+  const values = getCurrentValues()
 
-const headers=columns.map(c=>c.titleEl.innerText||'Column')
+  const data = [[title], ...values.map(v => [v])]
+  const ws = XLSX.utils.aoa_to_sheet(data)
+  ws['!cols'] = [{ wch: 26 }]
 
-const maxRows=Math.max(0,...columns.map(c=>getRows(c.colBody).length))
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
 
-const data=[headers]
-
-for(let i=0;i<maxRows;i++){
-
-data.push(columns.map(c=>{
-const r=getRows(c.colBody)
-return r[i]?.querySelector('input').value||''
-}))
-
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  XLSX.writeFile(wb, `SmartScan_${y}-${m}-${day}.xlsx`)
 }
 
-const ws=XLSX.utils.aoa_to_sheet(data)
-
-const wb=XLSX.utils.book_new()
-
-XLSX.utils.book_append_sheet(wb,ws,'Sheet1')
-
-const d=new Date().toISOString().slice(0,10)
-
-XLSX.writeFile(wb,`SmartScan_${d}.xlsx`)
-
-}
-
+addEventListener('pagehide', stopScan)
+addEventListener('beforeunload', stopScan)
 </script>
-
 </body>
 </html>
-
