@@ -502,7 +502,10 @@ let scanning = false
 let scanLock = false
 let appStarted = false
 
+let scanCooldown = false
+
 const rowsData = []
+const seen = new Set()
 
 startBtn.onclick = () => {
   if(appStarted) return
@@ -547,7 +550,6 @@ function makeRow(val){
   del.onclick = () => {
     const index = rowsData.findIndex(item => item.rowEl === r)
     if(index >= 0){
-      seen.delete(rowsData[index].value)
       rowsData.splice(index, 1)
     }
     r.remove()
@@ -568,10 +570,6 @@ function makeRow(val){
       return
     }
 
-    if(newVal !== item.value && seen.has(newVal)){
-      input.value = item.value
-      return
-    }
 
     seen.delete(item.value)
     item.value = newVal
@@ -597,7 +595,6 @@ function addValue(val){
     inputEl: made.inputEl
   })
 
-  seen.add(clean)
   updateCount()
 
   made.rowEl.classList.add('flash')
@@ -613,6 +610,15 @@ function getCurrentValues(){
 }
 
 function openScan(){
+
+  if(scanCooldown) return
+
+  scanCooldown = true
+
+  setTimeout(()=>{
+    scanCooldown = false
+  },800)
+
   modal.style.display = 'flex'
   startScan()
 }
@@ -622,7 +628,7 @@ function closeModal(){
   modal.style.display = 'none'
   hint.textContent = 'Allow camera access to start scanning'
   scanBtn.classList.remove('scanning')
-  scanBtn.textContent = '📷 Scan'
+  scanBtn.textContent = 'SCAN'
 }
 
 async function startScan(){
@@ -635,7 +641,9 @@ async function startScan(){
   scanBtn.textContent = 'Scanning...'
 
   try{
+    if(!reader){
     reader = new ZXing.BrowserMultiFormatReader()
+    }
     reader.timeBetweenDecodingAttempts = 120
 
     await reader.decodeFromConstraints(
@@ -667,7 +675,7 @@ async function startScan(){
     hint.textContent = 'Camera failed to start'
     scanning = false
     scanBtn.classList.remove('scanning')
-    scanBtn.textContent = '📷 Scan'
+    scanBtn.textContent = 'SCAN'
   }
 }
 
@@ -752,4 +760,3 @@ addEventListener('beforeunload', stopScan)
 </script>
 </body>
 </html>
-
