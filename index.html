@@ -503,7 +503,6 @@ let scanLock = false
 let appStarted = false
 
 const rowsData = []
-const seen = new Set()
 
 startBtn.onclick = () => {
   if(appStarted) return
@@ -588,7 +587,6 @@ function makeRow(val){
 function addValue(val){
   const clean = normalizeValue(val)
   if(!clean) return
-  if(seen.has(clean)) return
 
   const made = makeRow(clean)
   list.prepend(made.rowEl)
@@ -754,3 +752,4 @@ addEventListener('beforeunload', stopScan)
 </script>
 </body>
 </html>
+
