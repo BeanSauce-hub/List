@@ -6,6 +6,653 @@
 
 <style>
 :root{
+
+--bg:#f2f3f7;
+
+--card:#ffffff;
+
+--text:#1d1d1f;
+--muted:#6e6e73;
+
+--border:rgba(0,0,0,.06);
+
+--accent:#0a84ff;
+--danger:#ff3b30;
+--success:#30d158;
+
+--radius:16px;
+--colw:260px;
+
+}
+
+/* RESET */
+
+*{
+box-sizing:border-box;
+margin:0;
+padding:0;
+}
+
+body{
+
+background:var(--bg);
+
+font-family:
+system-ui,
+-apple-system,
+SF Pro Text,
+Inter,
+Segoe UI,
+Roboto,
+sans-serif;
+
+color:var(--text);
+
+font-size:16px;
+}
+
+/* APP WRAP */
+
+.wrap{
+
+padding:18px 16px 28px;
+
+display:flex;
+flex-direction:column;
+
+gap:16px;
+}
+
+/* START SCREEN */
+
+#landing{
+
+display:flex;
+justify-content:center;
+align-items:center;
+
+height:65vh;
+}
+
+.start{
+
+width:170px;
+height:170px;
+
+border-radius:999px;
+
+background:linear-gradient(
+180deg,
+#0a84ff,
+#0071ff
+);
+
+color:white;
+
+font-size:26px;
+font-weight:600;
+
+border:none;
+
+box-shadow:
+0 18px 40px rgba(10,132,255,.25);
+
+cursor:pointer;
+
+transition:.2s;
+}
+
+.start:active{
+transform:scale(.95);
+}
+
+/* TOPBAR */
+
+.topbar{
+
+display:flex;
+justify-content:space-between;
+gap:10px;
+}
+
+.btn{
+
+flex:1;
+
+background:white;
+
+border:none;
+
+padding:12px;
+
+border-radius:12px;
+
+font-weight:600;
+
+font-size:15px;
+
+box-shadow:
+0 4px 12px rgba(0,0,0,.05);
+
+cursor:pointer;
+}
+
+.btn.success{
+
+background:var(--success);
+color:white;
+}
+
+/* MAIN CARD */
+
+.card{
+
+background:transparent;
+}
+
+/* HEADER */
+
+.thead{
+
+display:flex;
+
+gap:12px;
+
+padding:6px 4px;
+
+font-weight:600;
+
+color:var(--muted);
+}
+
+/* BODY */
+
+.tbody{
+
+display:flex;
+
+gap:12px;
+
+overflow-x:auto;
+
+padding:4px;
+}
+
+/* COLUMN */
+
+.col{
+
+min-width:var(--colw);
+
+display:flex;
+flex-direction:column;
+
+gap:10px;
+}
+
+/* SCAN BUTTON */
+
+.scan-btn{
+
+height:48px;
+
+border-radius:14px;
+
+background:var(--accent);
+
+color:white;
+
+border:none;
+
+font-weight:600;
+
+font-size:15px;
+
+box-shadow:
+0 6px 18px rgba(10,132,255,.25);
+
+cursor:pointer;
+}
+
+/* ROW */
+
+.trow{
+
+display:grid;
+
+grid-template-columns:1fr 36px;
+
+gap:10px;
+
+padding:12px;
+
+border-radius:14px;
+
+background:var(--card);
+
+box-shadow:
+0 4px 10px rgba(0,0,0,.04);
+
+transition:.2s;
+}
+
+.trow.flash{
+
+box-shadow:
+0 0 0 2px rgba(48,209,88,.35);
+}
+
+/* INPUT */
+
+.cell input{
+
+width:100%;
+
+background:transparent;
+
+border:none;
+
+outline:none;
+
+font-size:15px;
+}
+
+/* DELETE */
+
+.clear-btn{
+
+background:none;
+
+border:none;
+
+color:var(--danger);
+
+font-size:16px;
+
+font-weight:700;
+}
+
+/* MODAL */
+
+.modal{
+
+position:fixed;
+inset:0;
+
+display:none;
+
+align-items:center;
+justify-content:center;
+
+background:rgba(0,0,0,.25);
+
+backdrop-filter:blur(6px);
+}
+
+.stage{
+
+height:50vh;
+background:black;
+}
+
+/* SCROLL */
+
+::-webkit-scrollbar{
+display:none;
+}
+</style>
+
+<body>
+
+<div class="wrap">
+
+<section id="landing">
+<button class="start" id="startBtn">START</button>
+</section>
+
+<section id="app">
+
+<div class="topbar">
+<button class="btn" id="copyAll">Copy All</button>
+<button class="btn" id="exportXlsx">Export Sheet</button>
+</div>
+
+<div class="card">
+<div class="thead" id="thead"></div>
+<div class="tbody" id="tbody"></div>
+</div>
+
+</section>
+
+</div>
+
+<div class="modal" id="modal">
+
+<div style="width:min(92vw,520px);margin:auto;background:#12131a;border-radius:14px">
+
+<div style="display:flex;justify-content:flex-end;padding:10px">
+<button class="btn" id="close">Close</button>
+</div>
+
+<div class="stage">
+<video id="video" playsinline muted></video>
+</div>
+
+<div id="hint">Allow camera access</div>
+
+</div>
+
+</div>
+
+<script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<script>
+
+const $=id=>document.getElementById(id)
+
+const startBtn=$('startBtn')
+const landing=$('landing')
+const app=$('app')
+
+const thead=$('thead')
+const tbody=$('tbody')
+
+const copyBtn=$('copyAll')
+const exportBtn=$('exportXlsx')
+
+const modal=$('modal')
+const video=$('video')
+const hint=$('hint')
+const closeBtn=$('close')
+
+let reader=null
+let controls=null
+let scanning=false
+let targetCol=null
+let scanLock=false
+
+let appStarted=false
+
+const columns=[]
+
+startBtn.onclick=()=>{
+
+if(appStarted)return
+
+appStarted=true
+
+landing.style.display='none'
+
+app.style.display='block'
+
+addColumn('Code')
+
+}
+
+function addColumn(title){
+
+const head=document.createElement('div')
+head.className='head-cell'
+
+const t=document.createElement('div')
+t.className='head-edit'
+t.contentEditable=true
+t.textContent=title
+
+head.appendChild(t)
+thead.appendChild(head)
+
+const col=document.createElement('div')
+col.className='col'
+
+tbody.appendChild(col)
+
+appendPlaceholder(col)
+
+columns.push({titleEl:t,colBody:col})
+
+}
+
+function appendPlaceholder(col){
+
+const ph=document.createElement('div')
+ph.className='placeholder'
+
+const btn=document.createElement('button')
+btn.className='scan-btn'
+btn.textContent='📷 Scan'
+
+btn.onclick=()=>{
+targetCol=col
+openScan()
+}
+
+ph.appendChild(btn)
+col.appendChild(ph)
+
+}
+
+function makeRow(val){
+
+const r=document.createElement('div')
+r.className='trow'
+
+const c=document.createElement('div')
+c.className='cell'
+
+const input=document.createElement('input')
+input.value=val
+
+c.appendChild(input)
+
+const del=document.createElement('button')
+del.className='clear-btn'
+del.textContent='X'
+
+del.onclick=()=>r.remove()
+
+r.appendChild(c)
+r.appendChild(del)
+
+return r
+
+}
+
+function getRows(col){
+return [...col.querySelectorAll('.trow')]
+}
+
+function addValue(col,val){
+
+const row=makeRow(val)
+
+const ph=col.querySelector('.placeholder')
+
+ph.insertAdjacentElement('afterend',row)
+
+const rows=getRows(col)
+
+if(rows.length>500){
+rows[rows.length-1].remove()
+}
+
+row.classList.add('flash')
+
+setTimeout(()=>row.classList.remove('flash'),700)
+
+row.scrollIntoView({behavior:'smooth',block:'nearest'})
+
+}
+
+function openScan(){
+modal.style.display='flex'
+startScan()
+}
+
+function closeModal(){
+stopScan()
+modal.style.display='none'
+}
+
+async function startScan(){
+
+if(scanning)return
+
+scanning=true
+scanLock=false
+
+hint.textContent='Scanning...'
+
+reader=new ZXing.BrowserMultiFormatReader()
+
+reader.timeBetweenDecodingAttempts=120
+
+await reader.decodeFromConstraints(
+{video:{facingMode:'environment'}},
+video,
+(result,err,c)=>{
+
+controls=c
+
+if(!scanning)return
+if(!result)return
+if(scanLock)return
+
+const val=result.getText().trim()
+
+if(!val)return
+
+scanLock=true
+
+stopScan()
+
+onScan(val)
+
+})
+}
+
+function stopScan(){
+
+scanning=false
+
+try{controls?.stop()}catch{}
+
+try{
+const stream=video.srcObject
+if(stream)stream.getTracks().forEach(t=>t.stop())
+}catch{}
+
+video.srcObject=null
+
+try{reader?.reset()}catch{}
+
+reader=null
+
+}
+
+function onScan(val){
+
+const col=targetCol||columns[0].colBody
+
+addValue(col,val)
+
+navigator.clipboard?.writeText(val).catch(()=>{})
+
+setTimeout(closeModal,150)
+
+targetCol=null
+
+}
+
+closeBtn.onclick=closeModal
+
+modal.onclick=e=>{
+if(e.target===modal)closeModal()
+}
+
+copyBtn.onclick=()=>{
+
+let text=''
+let total=0
+
+columns.forEach((c,i)=>{
+
+const title=c.titleEl.innerText.trim()
+
+const rows=getRows(c.colBody)
+.map(r=>r.querySelector('input').value.trim())
+.filter(v=>v)
+
+if(!rows.length)return
+
+text+=`${title} (${rows.length})\n`
+
+rows.forEach(v=>{
+text+=v+'\n'
+total++
+})
+
+text+='\n'
+
+})
+
+text+=`TOTAL: ${total}`
+
+navigator.clipboard.writeText(text).then(()=>{
+
+copyBtn.classList.add('success')
+copyBtn.textContent='✔ Copied'
+
+setTimeout(()=>{
+copyBtn.classList.remove('success')
+copyBtn.textContent='Copy All'
+},1200)
+
+})
+
+}
+
+exportBtn.onclick=()=>{
+
+const headers=columns.map(c=>c.titleEl.innerText||'Column')
+
+const maxRows=Math.max(0,...columns.map(c=>getRows(c.colBody).length))
+
+const data=[headers]
+
+for(let i=0;i<maxRows;i++){
+
+data.push(columns.map(c=>{
+const r=getRows(c.colBody)
+return r[i]?.querySelector('input').value||''
+}))
+
+}
+
+const ws=XLSX.utils.aoa_to_sheet(data)
+
+const wb=XLSX.utils.book_new()
+
+XLSX.utils.book_append_sheet(wb,ws,'Sheet1')
+
+const d=new Date().toISOString().slice(0,10)
+
+XLSX.writeFile(wb,`SmartScan_${d}.xlsx`)
+
+}
+
+</script>
+
+</body>
+</html><!doctype html>
+<html lang="en">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>SmartScan</title>
+
+<style>
+:root{
 --bg:#0e0f12;
 --fg:#e7e9ee;
 --card:#14161c;
@@ -539,3 +1186,4 @@ XLSX.writeFile(wb,`SmartScan_${d}.xlsx`)
 
 </body>
 </html>
+
