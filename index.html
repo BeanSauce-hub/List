@@ -4,7 +4,619 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>SmartScan</title>
 
+<style><!doctype html>
+<html lang="en">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>SmartScan UX Pro</title>
+
 <style>
+:root{
+  --bg:#0e0f12;
+  --fg:#e7e9ee;
+  --muted:#9aa1ad;
+  --card:#14161c;
+  --card2:#1a1d25;
+  --border:rgba(255,255,255,.12);
+  --btn:#e6372a;
+  --danger:#ff4d4f;
+  --ok:#1f8f3a;
+  --okGlow:rgba(31,143,58,.28);
+  --tap:44px;
+  --colw:320px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html,body{height:100%}
+
+body{
+  background:var(--bg);
+  color:var(--fg);
+  font:16px system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+}
+
+.wrap{
+  max-width:1000px;
+  margin:auto;
+  padding:18px 4vw 28px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+#landing{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#0e0f12;
+  z-index:50;
+}
+
+.start{
+  width:240px;
+  height:240px;
+  border-radius:50%;
+  background:#e6372a;
+  color:#fff;
+  font-size:32px;
+  font-weight:900;
+  border:none;
+  cursor:pointer;
+  box-shadow:0 20px 60px rgba(230,55,42,.18);
+}
+
+#app{display:none}
+
+.topbar{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  position:sticky;
+  top:0;
+  z-index:20;
+  padding:2px 0 6px;
+  background:linear-gradient(to bottom, rgba(14,15,18,.96), rgba(14,15,18,.78), rgba(14,15,18,0));
+  backdrop-filter:blur(6px);
+}
+
+.btn{
+  border:1px solid var(--border);
+  background:var(--card2);
+  color:#fff;
+  padding:8px 12px;
+  border-radius:10px;
+  cursor:pointer;
+  transition:background .2s,color .2s,border-color .2s,transform .12s;
+}
+
+.btn:hover{background:#232733}
+.btn:active{transform:scale(.98)}
+
+.btn.success{
+  background:var(--ok);
+  border-color:var(--ok);
+  color:#fff;
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  overflow:hidden;
+}
+
+.thead,.tbody{
+  display:flex;
+  gap:8px;
+  padding:10px 12px;
+  overflow-x:auto;
+  align-items:flex-start;
+}
+
+.thead{
+  border-bottom:1px solid var(--border);
+  position:sticky;
+  top:52px;
+  z-index:10;
+  background:#14161c;
+}
+
+.head-cell{
+  min-width:var(--colw);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:2px 0;
+}
+
+.head-edit{
+  flex:1;
+  background:transparent;
+  color:#fff;
+  border:none;
+  outline:none;
+  font-weight:700;
+  min-height:24px;
+}
+
+.col{
+  min-width:var(--colw);
+  max-width:var(--colw);
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.placeholder{
+  position:sticky;
+  top:0;
+  z-index:3;
+  background:#14161c;
+  padding-bottom:4px;
+}
+
+.scan-btn{
+  width:100%;
+  height:44px;
+  border-radius:12px;
+  border:1px solid #2d3340;
+  background:#1c2029;
+  color:#fff;
+  font-weight:800;
+  letter-spacing:.2px;
+  cursor:pointer;
+  transition:background .2s,border-color .2s,transform .12s;
+}
+
+.scan-btn:hover{
+  background:#232833;
+  border-color:#394152;
+}
+
+.scan-btn:active{
+  transform:scale(.985);
+}
+
+.trow{
+  display:grid;
+  grid-template-columns:1fr 44px;
+  gap:8px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:8px;
+  background:#151922;
+  transition:border-color .22s, box-shadow .22s, transform .22s, background .22s;
+}
+
+.trow.flash{
+  border-color:rgba(31,143,58,.95);
+  box-shadow:0 0 0 3px var(--okGlow);
+  background:rgba(31,143,58,.10);
+  transform:translateY(-1px);
+}
+
+.cell{
+  min-width:0;
+}
+
+.cell input{
+  width:100%;
+  background:transparent;
+  border:none;
+  outline:none;
+  color:#fff;
+  font:inherit;
+}
+
+.clear-btn{
+  width:44px;
+  height:44px;
+  border-radius:12px;
+  border:1px solid #ff4d4f;
+  background:transparent;
+  color:#ff4d4f;
+  cursor:pointer;
+  font-weight:700;
+}
+
+.clear-btn:hover{
+  background:rgba(255,77,79,.08);
+}
+
+.modal{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.55);
+  z-index:100;
+  padding:20px;
+}
+
+.modal-panel{
+  width:min(92vw,520px);
+  background:#12131a;
+  border-radius:14px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:0 20px 80px rgba(0,0,0,.35);
+}
+
+.modal-top{
+  display:flex;
+  justify-content:flex-end;
+  padding:10px;
+}
+
+.stage{
+  background:#000;
+  height:54vh;
+}
+
+#video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+#hint{
+  padding:10px 12px 12px;
+  text-align:center;
+  color:#aaa;
+  font-size:14px;
+}
+
+::-webkit-scrollbar{height:10px;width:10px}
+::-webkit-scrollbar-thumb{
+  background:rgba(255,255,255,.14);
+  border-radius:999px;
+}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+
+<body>
+
+<div class="wrap">
+
+  <section id="landing">
+    <button class="start" id="startBtn">START</button>
+  </section>
+
+  <section id="app">
+
+    <div class="topbar">
+      <button class="btn" id="copyAll">Copy All</button>
+      <button class="btn" id="exportXlsx">Export Sheet</button>
+    </div>
+
+    <div class="card">
+      <div class="thead" id="thead"></div>
+      <div class="tbody" id="tbody"></div>
+    </div>
+
+  </section>
+
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-panel">
+    <div class="modal-top">
+      <button class="btn" id="close">Close</button>
+    </div>
+
+    <div class="stage">
+      <video id="video" playsinline muted></video>
+    </div>
+
+    <div id="hint">Allow camera access to start scanning</div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<script>
+const $ = id => document.getElementById(id)
+
+const startBtn = $('startBtn')
+const landing = $('landing')
+const app = $('app')
+
+const thead = $('thead')
+const tbody = $('tbody')
+
+const copyAllBtn = $('copyAll')
+const exportBtn = $('exportXlsx')
+
+const modal = $('modal')
+const video = $('video')
+const hint = $('hint')
+const closeBtn = $('close')
+
+let reader = null
+let controls = null
+let scanning = false
+let targetCol = null
+let scanLock = false
+
+const columns = []
+
+startBtn.onclick = () => {
+  landing.remove()
+  app.style.display = 'block'
+  addColumn('Code')
+}
+
+function addColumn(title){
+  const head = document.createElement('div')
+  head.className = 'head-cell'
+
+  const t = document.createElement('div')
+  t.className = 'head-edit'
+  t.contentEditable = true
+  t.spellcheck = false
+  t.textContent = title
+
+  head.appendChild(t)
+  thead.appendChild(head)
+
+  const col = document.createElement('div')
+  col.className = 'col'
+
+  tbody.appendChild(col)
+
+  appendPlaceholder(col)
+
+  columns.push({
+    titleEl: t,
+    colBody: col
+  })
+}
+
+function appendPlaceholder(col){
+  const ph = document.createElement('div')
+  ph.className = 'placeholder'
+
+  const btn = document.createElement('button')
+  btn.className = 'scan-btn'
+  btn.textContent = '📷 Scan'
+
+  btn.onclick = () => {
+    targetCol = col
+    openModalAndScan()
+  }
+
+  ph.appendChild(btn)
+  col.appendChild(ph)
+}
+
+function makeDataRow(val){
+  const r = document.createElement('div')
+  r.className = 'trow'
+
+  const c = document.createElement('div')
+  c.className = 'cell'
+
+  const input = document.createElement('input')
+  input.value = val
+
+  c.appendChild(input)
+
+  const del = document.createElement('button')
+  del.className = 'clear-btn'
+  del.textContent = 'X'
+  del.onclick = () => r.remove()
+
+  r.appendChild(c)
+  r.appendChild(del)
+
+  return r
+}
+
+function getRowsInColumn(col){
+  return [...col.querySelectorAll('.trow')]
+}
+
+function addValueToColumn(col, val){
+  const row = makeDataRow(val)
+  const placeholder = col.querySelector('.placeholder')
+
+  if(placeholder){
+    placeholder.insertAdjacentElement('afterend', row)
+  }else{
+    col.prepend(row)
+  }
+
+  const rows = getRowsInColumn(col)
+
+  if(rows.length > 500){
+    rows[rows.length - 1].remove()
+  }
+
+  row.classList.add('flash')
+
+  setTimeout(() => {
+    row.classList.remove('flash')
+  }, 850)
+
+  row.scrollIntoView({
+    behavior:'smooth',
+    block:'nearest',
+    inline:'nearest'
+  })
+
+  return row
+}
+
+function openModalAndScan(){
+  modal.style.display = 'flex'
+  startScan()
+}
+
+function closeModal(){
+  stopScan()
+  modal.style.display = 'none'
+  hint.textContent = 'Allow camera access to start scanning'
+}
+
+async function startScan(){
+  if(scanning) return
+
+  scanLock = false
+  scanning = true
+  hint.textContent = 'Scanning...'
+
+  try{
+    reader = new ZXing.BrowserMultiFormatReader()
+    reader.timeBetweenDecodingAttempts = 120
+
+    await reader.decodeFromConstraints(
+      {
+        video:{
+          facingMode:'environment',
+          width:{ideal:1280},
+          height:{ideal:720}
+        }
+      },
+      video,
+      (result, err, c) => {
+        controls = c
+
+        if(!scanning) return
+        if(!result) return
+        if(scanLock) return
+
+        const val = result.getText().trim()
+        if(!val) return
+
+        scanLock = true
+        hint.textContent = 'Captured'
+
+        stopScan()
+        onScanSuccess(val)
+      }
+    )
+  }catch(err){
+    hint.textContent = 'Camera failed to start'
+    scanning = false
+  }
+}
+
+function stopScan(){
+  scanning = false
+
+  try{ controls?.stop() }catch{}
+  controls = null
+
+  try{ video.pause() }catch{}
+
+  try{
+    const stream = video.srcObject
+    if(stream) stream.getTracks().forEach(t => t.stop())
+  }catch{}
+
+  video.srcObject = null
+
+  try{ reader?.reset() }catch{}
+  reader = null
+}
+
+function onScanSuccess(val){
+  const col = targetCol || columns[0]?.colBody
+
+  if(col){
+    addValueToColumn(col, val)
+  }
+
+  navigator.clipboard?.writeText(val).catch(() => {})
+
+  setTimeout(() => {
+    closeModal()
+  }, 180)
+
+  targetCol = null
+}
+
+closeBtn.onclick = closeModal
+
+modal.onclick = e => {
+  if(e.target === modal) closeModal()
+}
+
+addEventListener('pagehide', stopScan)
+addEventListener('beforeunload', stopScan)
+
+copyAllBtn.onclick = () => {
+  let text = ''
+  let total = 0
+
+  columns.forEach((c, i) => {
+    const title = (c.titleEl.innerText || `Col ${i + 1}`).trim()
+    const rows = getRowsInColumn(c.colBody)
+      .map(r => r.querySelector('input')?.value.trim() || '')
+      .filter(v => v !== '')
+
+    if(rows.length === 0) return
+
+    text += `${title} (${rows.length})\n`
+    rows.forEach(v => {
+      text += v + '\n'
+      total++
+    })
+    text += '\n'
+  })
+
+  text += `TOTAL: ${total}`
+
+  navigator.clipboard?.writeText(text).then(() => {
+    copyAllBtn.classList.add('success')
+    copyAllBtn.textContent = '✔ Copied'
+
+    setTimeout(() => {
+      copyAllBtn.classList.remove('success')
+      copyAllBtn.textContent = 'Copy All'
+    }, 1200)
+  }).catch(() => {})
+}
+
+exportBtn.onclick = () => {
+  const headers = columns.map((c, i) => (c.titleEl.innerText || `Column ${i + 1}`).trim())
+
+  const maxRows = Math.max(
+    0,
+    ...columns.map(c => getRowsInColumn(c.colBody).length)
+  )
+
+  const data = [headers]
+
+  for(let i = 0; i < maxRows; i++){
+    const row = columns.map(c => {
+      const rows = getRowsInColumn(c.colBody)
+      return rows[i]?.querySelector('input')?.value || ''
+    })
+    data.push(row)
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(data)
+  const wb = XLSX.utils.book_new()
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
+
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+
+  XLSX.writeFile(wb, `SmartScan_${y}-${m}-${day}.xlsx`)
+}
+</script>
+
+</body>
+</html>
 :root{
 --bg:#0e0f12;
 --fg:#e7e9ee;
@@ -497,3 +1109,4 @@ XLSX.writeFile(wb,'SmartScan.xlsx')
 
 </body>
 </html>
+
